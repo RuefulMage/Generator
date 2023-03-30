@@ -1,0 +1,20 @@
+<form [formGroup]="myForm" (ngSubmit)="onSubmit()">
+  <label>
+    Кол-во рядов:
+    <input type="length" formControlName="rows">
+  </label>
+  <label>
+    Кол-во цифр:
+    <input type="length" formControlName="digits">
+  </label>
+
+  <button type="submit">Submit</button>
+</form>
+
+<h2>Пример</h2>
+<p class="example">
+  <span *ngFor="let i of currentRow">{{i}}</span>
+</p>
+
+<h2>Ответ</h2>
+<p>{{answer}}</p>
