@@ -11,10 +11,14 @@
   <button type="submit">Submit</button>
 </form>
 
-<h2>Пример</h2>
-<p class="example">
-  <span *ngFor="let i of currentRow">{{i}}</span>
-</p>
+<div class="examples">
+  <div class="example-wrapper" *ngFor="let example of currentRows; index as i">
+    <h2>Пример</h2>
+    <p class="example">
+      <span *ngFor="let i of example">{{i}}</span>
+    </p>
 
-<h2>Ответ</h2>
-<p>{{answer}}</p>
+    <h2>Ответ</h2>
+    <p>{{answers[i]}}</p>
+  </div>
+</div>

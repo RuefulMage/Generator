@@ -26,7 +26,7 @@ export class GeneratorService {
     const example: { example: number[]; answer: number }[] = [];
     const result: { example: string; sign: 'positive' | 'negative' }[] = [];
 
-    for (let i = 0; i < rows; i++) {
+    for (let i = 0; i < rows - 1; i++) {
       let candidates = [];
       const positiveCandidates = [];
       const negativeCandidates = [];

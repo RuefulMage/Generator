@@ -14,18 +14,23 @@ export class SimpleCountComponent implements OnInit {
     digits: new FormControl(),
   });
 
-  currentRow: string[] = [];
-  answer: string | null = '';
+  currentRows: string[][] = [];
+  answers: string[] = [];
 
   constructor(private generator: GeneratorService) { }
 
   onSubmit() {
+    this.currentRows = [];
+    this.answers = [];
+
     if (this.myForm.get('rows')?.value && this.myForm.get('rows')?.value) {
-      const {result, answer} = this.generator.generateExample(this.myForm.get('rows')?.value, this.myForm.get('digits')?.value);
-      this.currentRow = result.map(({example, sign}) => {
-        return `${sign === 'negative' ? '-' : ''}${example}`;
-      });
-      this.answer = answer;
+      for (let i = 0; i < 10; i++ ) {
+        const {result, answer} = this.generator.generateExample(this.myForm.get('rows')?.value, this.myForm.get('digits')?.value);
+        this.currentRows.push(result.map(({example, sign}) => {
+          return `${sign === 'negative' ? '-' : ''}${example}`;
+        }));
+        this.answers.push(answer);
+      }
     }
   }
 

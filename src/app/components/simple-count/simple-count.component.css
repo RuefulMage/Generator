@@ -1,3 +1,13 @@
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.example-wrapper {
+  border: 2px solid black;
+  padding: 5px;
+}
+
 .example {
   display: flex;
   flex-direction: column;
