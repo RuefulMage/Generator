@@ -1,16 +1,27 @@
 import {Injectable} from '@angular/core';
 import {
   addFiveBasedNumbers,
-  compareFiveBasedNumbers,
+  compareFiveBasedNumbers, convertDecimalToFive,
   convertFiveToDecimal,
   getArrayDifference,
   getArrayModulesDifference,
   getLastDigitInFiveBasedSystem,
-  getNumberOfDigitsInFiveBasedSystem,
+  getNumberOfDigitsInFiveBasedSystem, getNumbersRange,
   getRandomFive,
   getRandomFromList,
   isNegative
 } from "../utils/utils";
+import {every, find} from "rxjs";
+
+export type Sign = 'positive' | 'negative';
+
+export type AlternationMode = 'no' | 'on' | 'double' | 'multiple';
+
+interface IRow {
+  digits: number[];
+  answers: number[];
+  sign: Sign;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -22,124 +33,206 @@ export class GeneratorService {
   constructor() {
   }
 
-  public generateExample(rows: number, digits: number): { result: { example: string; sign: 'positive' | 'negative' }[], answer: string } {
-    const example: { example: number[]; answer: number }[] = [];
-    const result: { example: string; sign: 'positive' | 'negative' }[] = [];
+  public convertExampleToDecimal(rows: IRow[]): IRow[] {
+    const convertedRows: IRow[] = [];
 
-    for (let i = 0; i < rows - 1; i++) {
-      let candidates = [];
-      const positiveCandidates = [];
-      const negativeCandidates = [];
+    rows.forEach(({digits, sign, answers}) => {
+      const row: IRow = {
+        digits: digits.map(digit => convertFiveToDecimal(digit)),
+        answers: answers.map(answer => convertFiveToDecimal(answer)),
+        sign
+      };
 
-      for (let j = 0; j < digits; j++) {
-        if (i === 0) {
-          const firstNumber = parseInt(getRandomFive(1, 14));
-          example.push({example: [firstNumber], answer: firstNumber});
+      convertedRows.push(row);
+    });
 
-          if (j === 0) {
-            result.push({example: convertFiveToDecimal(Math.abs(firstNumber).toString()).toString(), sign: 'positive'})
-          } else {
-            result[i].example += convertFiveToDecimal(Math.abs(firstNumber).toString()).toString();
-          }
-        }
-        const digitCandidates = this.generatePossibleValuesList(example[j].answer, example[j].example);
-        candidates.push(digitCandidates);
-        positiveCandidates.push(digitCandidates.filter(a => a >= 0));
-        negativeCandidates.push(digitCandidates.filter(a => a < 0));
-      }
+    return convertedRows;
+  }
 
-      let sign: 'positive' | 'negative' = getRandomFromList(['positive', 'negative']);
+  public generate(rowsAmount: number,
+                  digits: number,
+                  alternationMode: AlternationMode = 'no',
+                  possibleDigits: number[]
+  ): IRow[] {
+    const rows: IRow[] = [];
+    const convertedPossibleDigits = possibleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
 
-      if (i > 1 && result[i - 1].sign === result[i - 2].sign) {
-        sign = result[i - 1].sign === 'positive' ? 'negative' : 'positive';
-      }
-
-      const isEveryDigitHasPositive = positiveCandidates.every(item => item.length > 0);
-      const isEveryDigitHasNegative = negativeCandidates.every(item => item.length > 0);
-
-      if (sign === 'positive') {
-        if (isEveryDigitHasPositive) {
-          candidates = positiveCandidates;
-        } else if (isEveryDigitHasNegative) {
-          sign = 'negative';
-          candidates = negativeCandidates;
-        } else {
-          candidates = positiveCandidates.map(value => {
-            if (value.length < 1) {
-              return [0];
-            }
-
-            return value;
-          });
-        }
+    for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
+      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits);
+      if (rowIndex === rowsAmount - 1) {
+        rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits, convertedPossibleDigits));
       } else {
-
-        if (isEveryDigitHasNegative) {
-          candidates = negativeCandidates;
-        } else if (isEveryDigitHasPositive) {
-          sign = 'positive';
-          candidates = positiveCandidates;
-        } else {
-          candidates = negativeCandidates.map(value => {
-            if (value.length < 1) {
-              return [0];
-            }
-
-            return value;
-          });
-        }
+        rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits));
       }
-
-      for (let k = 0; k < digits; k++) {
-        const chosenCandidate = getRandomFromList(candidates[k]);
-        example[k].answer = addFiveBasedNumbers(example[k].answer, chosenCandidate);
-        example[k].example.push(chosenCandidate);
-        if (k === 0) {
-          result.push({example: convertFiveToDecimal(Math.abs(chosenCandidate).toString()).toString(), sign})
-        } else {
-          result[i + 1].example += convertFiveToDecimal(Math.abs(chosenCandidate).toString()).toString();
-        }
-      }
-
     }
 
-    return {
-      result,
-      answer: example
-        .reduce((accumulator, currentValue) => accumulator += convertFiveToDecimal(currentValue.answer.toString()).toString(), '')
-    };
+    return this.convertExampleToDecimal(rows);
   }
 
-  private generateOneDigitRow(rows: number) {
-    const currentExample: number[] = [];
-
-    const firstNumber = parseInt(getRandomFive(0, 20));
-    currentExample.push(firstNumber);
-    let answer = firstNumber;
-
-    for (let i = 0; i < rows; i++) {
-      const candidates = this.generatePossibleValuesList(answer, currentExample);
-      const chosenCandidate = getRandomFromList(candidates);
-      answer = addFiveBasedNumbers(answer, chosenCandidate);
-      currentExample.push(chosenCandidate);
+  private generateOneRow(digits: number, rows: IRow[], maxDigitsNumber: number, possibleDigits: number[], possibleAnswers: number[] = []): IRow {
+    const row: IRow = {
+      digits: [],
+      answers: [],
+      sign: 'positive'
+    };
+    const positiveCandidates: number[][] = [];
+    const negativeCandidates: number[][] = [];
+    let candidates: number[][] = [];
+    let allCandidates: number[][] = [];
+    for (let digitIndex = 0; digitIndex < maxDigitsNumber; digitIndex++) {
+      if (rows.length === 0) {
+        const firstNumber = this.getFirstNumber(possibleDigits);
+        row.digits.push(firstNumber);
+        row.answers.push(firstNumber);
+        row.sign = 'positive';
+      } else {
+        if (digitIndex < maxDigitsNumber - digits) {
+          candidates.push([0]);
+          positiveCandidates.push([0]);
+          negativeCandidates.push([0]);
+          allCandidates.push([0]);
+        } else {
+          const possibleValues = this.generatePossibleValuesList(
+            rows[rows.length - 1].answers[digitIndex],
+            rows.map(row => row.digits[digitIndex]),
+            this.getPossibleDigitsByCurrentAnswer(possibleDigits),
+            possibleAnswers || []);
+          allCandidates.push(possibleValues[0]);
+          candidates.push(possibleValues[1]);
+          positiveCandidates.push(candidates[digitIndex].filter(cand => cand > 0));
+          negativeCandidates.push(candidates[digitIndex].filter(cand => cand < 0));
+        }
+      }
     }
 
-    return {
-      example: currentExample.map(a => convertFiveToDecimal(a.toString())),
-      answer: convertFiveToDecimal(answer.toString())
+    if (rows.length === 0) {
+      return row;
+    }
+
+    return this.getRowByCandidates(rows, allCandidates, candidates, positiveCandidates, negativeCandidates);
+  }
+
+  private getFirstNumber(possibleDigits: number[]): number {
+    const positivePossibleDigits = possibleDigits.filter(digit => digit > 0);
+    const negativePossibleDigits = possibleDigits.filter(digit => digit < 0);
+    if (negativePossibleDigits.length === 0) {
+      return 0;
+    }
+
+    if (positivePossibleDigits.length === 0) {
+      return 14;
+    }
+
+    return getRandomFromList(positivePossibleDigits);
+  }
+
+  private getDigitsAmountByAlternationMode(mode: AlternationMode, rowIndex: number, digits: number): number {
+    let computedDigits = digits;
+    switch (mode) {
+      case 'no':
+        computedDigits = digits;
+        break;
+      case 'on':
+        computedDigits = rowIndex % 2 === 0 ? digits : digits - 1;
+        break;
+      case 'double':
+        if (rowIndex % 3 === 0) {
+          computedDigits = digits;
+        } else if (rowIndex % 3 === 1) {
+          computedDigits = digits - 1;
+        } else {
+          computedDigits = digits - 2;
+        }
+        break;
+      case 'multiple' :
+        const possibleDigitsAmount = getNumbersRange(1, digits);
+        computedDigits = getRandomFromList(possibleDigitsAmount);
+        break;
+      default:
+        computedDigits = digits;
+    }
+
+    return Math.max(computedDigits, 1);
+  }
+
+  private getRowByCandidates(
+    rows: IRow[],
+    allCandidates: number[][],
+    candidates: number[][],
+    positiveCandidates: number[][],
+    negativeCandidates: number[][]
+  ): IRow {
+    const row: IRow = {
+      digits: [],
+      sign: 'positive',
+      answers: []
     };
+
+    row.sign = this.calculateRowSign(rows, allCandidates, positiveCandidates, negativeCandidates);
+    candidates = row.sign === 'positive' ? positiveCandidates : negativeCandidates;
+    candidates.forEach((cands, index) => {
+      let choosenCandidate = 0;
+      if (cands.length !== 0) {
+        choosenCandidate = getRandomFromList(cands);
+      } else {
+        const allSignCandidates = allCandidates[index].filter(cand => {
+          if (row.sign === 'positive') {
+            return cand > 0;
+          } else {
+            return cand < 0;
+          }
+        })
+
+        choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
+      }
+
+      row.digits.push(choosenCandidate);
+      row.answers.push(addFiveBasedNumbers(rows[rows.length - 1].answers[index], choosenCandidate));
+    });
+
+    return row;
   }
 
-  reset(): void {
+  private calculateRowSign(rows: IRow[], allCandidates: number[][], positiveCandidates: number[][], negativeCandidates: number[][]): Sign {
+    if (positiveCandidates[0].length === 0 || negativeCandidates[0].length === 0) {
+      return positiveCandidates[0].length === 0 ? 'negative' : 'positive';
+    }
 
+    const noPositiveCandidatesDigitsAmount = positiveCandidates
+      .reduce((accumulator, current) => current.length  < 1 ? accumulator + 1 : accumulator, 0);
+    const noNegativeCandidatesDigitsAmount = negativeCandidates
+      .reduce((accumulator, current) => current.length  < 1 ? accumulator + 1 : accumulator, 0);
+
+    let prioritySign: Sign = getRandomFromList(['positive', 'negative']);
+
+    if (rows.length > 1 && rows[rows.length - 1].sign === rows[rows.length - 2].sign) {
+      prioritySign = rows[rows.length - 1].sign === 'positive' ? 'negative' : 'positive';
+    }
+
+    if (noPositiveCandidatesDigitsAmount > 0 || noNegativeCandidatesDigitsAmount > 0) {
+      return noPositiveCandidatesDigitsAmount > noNegativeCandidatesDigitsAmount ? 'positive' :  'negative';
+    }
+
+    return prioritySign;
   }
 
-  private generatePossibleValuesList(base: number, currentExample: number[]): number[] {
-    const result = [];
+
+  private generatePossibleValuesList(
+    base: number,
+    currentExample: number[],
+    possibleCandidates: number[],
+    possibleAnswer: number[] = []): [number[], number[]] {
+    let result = [];
     let currentResult = base;
     let currentNumber = -20;
-
     while (compareFiveBasedNumbers(currentNumber, 20) === -1) {
+      if (possibleAnswer.length > 0) {
+        if (!possibleAnswer.find(item => item === addFiveBasedNumbers(currentNumber, currentResult))) {
+          currentNumber = addFiveBasedNumbers(currentNumber, 1);
+          continue;
+        }
+      }
+
       if (this.isValidForSimpleCount(currentNumber, currentResult)) {
         result.push(currentNumber);
       }
@@ -148,29 +241,55 @@ export class GeneratorService {
     }
 
     if (result.length < 1) {
-      debugger;
       console.error(`result for base: ${base} is empty`);
       throw new Error();
     }
 
-    const newNumbers = getArrayModulesDifference(result, currentExample);
+    result = result.filter(digit => possibleCandidates.find(item => item === digit));
+
+    return [result, this.getUniqueCandidates(result, base, currentExample)];
+  }
+
+
+  private getPossibleDigitsByCurrentAnswer(possibleDigits: number[]): number[] {
+    const positivePossibleDigits = possibleDigits.filter(item => item > 0);
+    const negativePossibleDigits = possibleDigits.filter(item => item < 0);
+    const result = [];
+
+    if (positivePossibleDigits.length === 0) {
+      result.push(14);
+    }
+
+    if (negativePossibleDigits.length === 0) {
+      result.push(-14);
+    }
+
+    result.push(...possibleDigits);
+
+    return result;
+  }
+
+  private getUniqueCandidates(candidates: number[], base: number, currentExample: number[]): number[] {
+
+    const newNumbers = getArrayModulesDifference(candidates, currentExample);
 
     if (newNumbers.length > 0) {
       return newNumbers;
     }
 
-    const resultWithoutLastExamples = getArrayModulesDifference(result, currentExample.slice(currentExample.length - 3));
+    const resultWithoutLastExamples = getArrayModulesDifference(candidates, currentExample.slice(currentExample.length - 3));
 
     if (resultWithoutLastExamples.length > 0) {
       return resultWithoutLastExamples;
     }
 
-    const resultWithoutBase = result.filter(a => a !== Math.abs(base));
+    const resultWithoutBase = candidates.filter(a => a !== Math.abs(base));
     if (resultWithoutBase.length > 0) {
       return resultWithoutBase;
     }
 
-    return result;
+
+    return candidates;
   }
 
   private isValidForSimpleCount(candidate: number, currentResult: number): boolean {

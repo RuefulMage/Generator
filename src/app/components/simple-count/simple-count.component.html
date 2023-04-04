@@ -7,18 +7,45 @@
     Кол-во цифр:
     <input type="length" formControlName="digits">
   </label>
+  <label>
+    Чередование
+    <select formControlName="alternation">
+      <option value="no">Нет</option>
+      <option value="on">Обычное</option>
+      <option value="double">Двойное</option>
+      <option value="multiple">Множественное</option>
+    </select>
+  </label>
+  <div>
+    <label for="positivePossibleDigits">Положительные числа</label>
+
+    <div class="select select--multiple">
+      <select multiple id="positivePossibleDigits" formControlName="positivePossibleDigits">
+        <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
+      </select>
+    </div>
+
+  </div>
+  <div>
+    <label>
+      Отрицательные числа числа
+      <select multiple formControlName="negativePossibleDigits">
+        <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
+      </select>
+    </label>
+  </div>
 
   <button type="submit">Submit</button>
 </form>
 
 <div class="examples">
-  <div class="example-wrapper" *ngFor="let example of currentRows; index as i">
+  <div class="example-wrapper" *ngFor="let example of currentRows; index as j">
     <h2>Пример</h2>
     <p class="example">
-      <span *ngFor="let i of example">{{i}}</span>
+      <span *ngFor="let i of example; index as k">{{i}}({{currentAnswers[j][k]}})</span>
     </p>
 
     <h2>Ответ</h2>
-    <p>{{answers[i]}}</p>
+    <p>{{answers[j]}}</p>
   </div>
 </div>

@@ -2,21 +2,27 @@ export function isNegative(num: number): boolean {
   return num < 0;
 }
 
-export function convertDecimalToFive(decimal: number): string {
+export function convertDecimalToFive(decimal: number): number {
   if (decimal === 0) {
-    return "0";
+    return 0;
   }
   const isNegative = decimal < 0;
   let digits = "";
+  decimal = Math.abs(decimal);
   while (decimal !== 0) {
     const remainder = Math.abs(decimal % 5);
     digits = remainder.toString() + digits;
     decimal = Math.floor(decimal / 5);
   }
-  return isNegative ? "-" + digits : digits;
+
+  const stringResult = isNegative ? "-" + digits : digits;
+
+  return parseInt(stringResult);
 }
 
-export function convertFiveToDecimal(five: string): number {
+export function convertFiveToDecimal(fiveNumber: number): number {
+  const five = fiveNumber.toString();
+
   const isNegative = five[0] === "-";
   const digits = isNegative ? five.substring(1) : five;
   let decimal = 0;
@@ -27,9 +33,9 @@ export function convertFiveToDecimal(five: string): number {
   return isNegative ? -decimal : decimal;
 }
 
-export function getRandomFive(min: number, max: number): string {
-  const decimalMin = convertFiveToDecimal(min.toString());
-  const decimalMax = convertFiveToDecimal((max.toString()));
+export function getRandomFive(min: number, max: number): number {
+  const decimalMin = convertFiveToDecimal(min);
+  const decimalMax = convertFiveToDecimal((max));
   const decimalRandom = Math.floor(Math.random() * (decimalMax - decimalMin + 1) + decimalMin);
   return convertDecimalToFive(decimalRandom);
 }
@@ -40,16 +46,19 @@ export function getRandomFromList<T>(list: T[]): T {
 }
 
 export function compareFiveBasedNumbers(num1: number, num2: number): number {
-  return compareFiveBasedNumbersByString(num1.toString(), num2.toString());
+  return compareFiveBasedNumbersByString(num1, num2);
 }
 
 export function addFiveBasedNumbers(num1: number, num2: number): number {
   return parseInt(addFiveBasedNumbersByString(num1.toString(), num2.toString()));
 }
 
-export function subtractFiveBasedNumbers(num1: string, num2: string): string {
-  if (compareFiveBasedNumbersByString(num1, num2) === -1) {
-    return `-${subtractFiveBasedNumbers(num2, num1)}`;
+export function subtractFiveBasedNumbers(first: number, second: number): number {
+  let num1 = first.toString();
+  let num2 = second.toString();
+
+  if (compareFiveBasedNumbersByString(first, second) === -1) {
+    return parseInt(`-${subtractFiveBasedNumbers(second, first)}`);
   }
 
   // Дополним числа нулями слева до одинаковой длины
@@ -85,7 +94,7 @@ export function subtractFiveBasedNumbers(num1: string, num2: string): string {
     result = '0';
   }
 
-  return result;
+  return parseInt(result);
 }
 
 export function getLastDigitInFiveBasedSystem(number: number): number {
@@ -109,12 +118,15 @@ export function getNumberOfDigitsInFiveBasedSystem(number: number): number {
 
 
 
-function compareFiveBasedNumbersByString(num1: string, num2: string): number {
+function compareFiveBasedNumbersByString(first: number, second: number): number {
+  let num1 = first.toString();
+  let num2 = second.toString();
+
   // Если оба числа отрицательные, меняем их знак и сравниваем их по модулю
   if (num1.startsWith('-') && num2.startsWith('-')) {
     num1 = num1.substring(1);
     num2 = num2.substring(1);
-    return -compareFiveBasedNumbersByString(num1, num2);
+    return -compareFiveBasedNumbersByString(parseInt(num1), parseInt(num2));
   }
 
   // Если только первое число отрицательное, второе число точно больше
@@ -147,6 +159,26 @@ function compareFiveBasedNumbersByString(num1: string, num2: string): number {
   return 0;
 }
 
+export function getArrayDifference<T>(a: T[], b: T[]): T[] {
+  return a.filter((x) => !b.includes(x));
+}
+
+export function getArrayModulesDifference(a: number[], b: number[]): number[] {
+  return a.filter((x) => {
+    return !(b.includes(x) || b.includes(-x));
+  });
+}
+
+export function getNumbersRange(min: number, max: number): number[] {
+  const array = [];
+
+  for (let i = min; i <= max; i++) {
+    array.push(i);
+  }
+  return array;
+
+}
+
 function addFiveBasedNumbersByString(num1: string, num2: string): string {
   // Если оба числа отрицательные, складываем их по модулю и добавляем знак "-"
   if (num1.startsWith('-') && num2.startsWith('-')) {
@@ -158,13 +190,13 @@ function addFiveBasedNumbersByString(num1: string, num2: string): string {
   // Если только первое число отрицательное, вычитаем из второго числа первое по модулю
   if (num1.startsWith('-')) {
     num1 = num1.substring(1);
-    return subtractFiveBasedNumbers(num2, num1);
+    return subtractFiveBasedNumbers(parseInt(num2), parseInt(num1)).toString();
   }
 
   // Если только второе число отрицательное, вычитаем из первого числа второе по модулю
   if (num2.startsWith('-')) {
     num2 = num2.substring(1);
-    return subtractFiveBasedNumbers(num1, num2);
+    return subtractFiveBasedNumbers(parseInt(num1), parseInt(num2)).toString();
   }
 
   // Дополним числа нулями слева до одинаковой длины
@@ -199,14 +231,4 @@ function addFiveBasedNumbersByString(num1: string, num2: string): string {
   }
 
   return result;
-}
-
-export function getArrayDifference<T>(a: T[], b: T[]): T[] {
-  return a.filter((x) => !b.includes(x));
-}
-
-export function getArrayModulesDifference(a: number[], b: number[]): number[] {
-  return a.filter((x) => {
-    return !(b.includes(x) || b.includes(-x));
-  });
 }
