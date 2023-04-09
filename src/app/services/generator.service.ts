@@ -3,15 +3,11 @@ import {
   addFiveBasedNumbers,
   compareFiveBasedNumbers, convertDecimalToFive,
   convertFiveToDecimal,
-  getArrayDifference,
   getArrayModulesDifference,
   getLastDigitInFiveBasedSystem,
   getNumberOfDigitsInFiveBasedSystem, getNumbersRange,
-  getRandomFive,
   getRandomFromList,
-  isNegative
 } from "../utils/utils";
-import {every, find} from "rxjs";
 
 export type Sign = 'positive' | 'negative';
 
@@ -59,11 +55,7 @@ export class GeneratorService {
 
     for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
       const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits);
-      if (rowIndex === rowsAmount - 1) {
-        rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits, convertedPossibleDigits));
-      } else {
-        rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits));
-      }
+      rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits));
     }
 
     return this.convertExampleToDecimal(rows);
@@ -96,7 +88,9 @@ export class GeneratorService {
             rows[rows.length - 1].answers[digitIndex],
             rows.map(row => row.digits[digitIndex]),
             this.getPossibleDigitsByCurrentAnswer(possibleDigits),
-            possibleAnswers || []);
+            possibleAnswers || [],
+            this.isNeedZeroing(possibleDigits, rows[rows.length - 1].answers),
+            this.isNeedMaximize(possibleDigits, rows[rows.length - 1].answers));
           allCandidates.push(possibleValues[0]);
           candidates.push(possibleValues[1]);
           positiveCandidates.push(candidates[digitIndex].filter(cand => cand > 0));
@@ -112,6 +106,29 @@ export class GeneratorService {
     return this.getRowByCandidates(rows, allCandidates, candidates, positiveCandidates, negativeCandidates, digits);
   }
 
+
+  private isNeedZeroing(possibleDigits: number[], currentAnswers: number[]): boolean {
+    if (!possibleDigits.some(digit => digit < 0)) {
+      const maxDigit = Math.max(...possibleDigits);
+      const maxAnswer = maxDigit > 4 ? 14 : 4;
+
+      return currentAnswers.some(answer => answer === maxAnswer);
+    }
+
+    return false;
+  }
+
+  private isNeedMaximize(possibleDigits: number[], currentAnswers: number[]): boolean {
+    if (!possibleDigits.some(digit => digit > 0)) {
+      const minDigit = Math.min(...possibleDigits);
+      const minAnswer = 0;
+
+      return currentAnswers.some(answer => answer === minAnswer);
+    }
+
+    return false;
+  }
+
   private getFirstNumber(possibleDigits: number[]): number {
     const positivePossibleDigits = possibleDigits.filter(digit => digit > 0);
     const negativePossibleDigits = possibleDigits.filter(digit => digit < 0);
@@ -120,7 +137,9 @@ export class GeneratorService {
     }
 
     if (positivePossibleDigits.length === 0) {
-      return 14;
+      const minPossibleDigit = Math.min(...possibleDigits);
+
+      return minPossibleDigit < -4 ? 14 : 4;
     }
 
     return getRandomFromList(positivePossibleDigits);
@@ -233,10 +252,28 @@ export class GeneratorService {
     base: number,
     currentExample: number[],
     possibleCandidates: number[],
-    possibleAnswer: number[] = []): [number[], number[]] {
+    possibleAnswer: number[] = [],
+    isZeroing = false,
+    isNeedMaximize = false
+  ): [number[], number[]] {
     let result = [];
     let currentResult = base;
     let currentNumber = -20;
+    debugger;
+
+    if (isZeroing) {
+      result.push(-base);
+      return [result, result];
+    }
+
+    if (isNeedMaximize) {
+      const maxValue = Math.min(...possibleCandidates) < -4 ? 14 : 4;
+      const value = addFiveBasedNumbers(-currentResult, maxValue);
+      result.push(value);
+      return [result, result];
+    }
+
+    debugger;
     while (compareFiveBasedNumbers(currentNumber, 20) === -1) {
       if (possibleAnswer.length > 0) {
         if (!possibleAnswer.find(item => item === addFiveBasedNumbers(currentNumber, currentResult))) {
@@ -254,7 +291,7 @@ export class GeneratorService {
 
     if (result.length < 1) {
       console.error(`result for base: ${base} is empty`);
-      throw new Error();
+      result.push(0);
     }
 
     result = result.filter(digit => possibleCandidates.find(item => item === digit));
@@ -305,6 +342,7 @@ export class GeneratorService {
   }
 
   private isValidForSimpleCount(candidate: number, currentResult: number): boolean {
+    console.log(currentResult);
     if (candidate === 0) {
       return false;
     }
@@ -321,6 +359,7 @@ export class GeneratorService {
       && getNumberOfDigitsInFiveBasedSystem(candidate) === 1
       && (addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) < 0
         || addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) > 4)) {
+      debugger;
       return false;
     }
 
