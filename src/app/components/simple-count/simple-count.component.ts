@@ -47,7 +47,7 @@ export class SimpleCountComponent implements OnInit {
           currentExampleRows.push(`${sign === 'negative' ? '-' : ''}${digits.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), '')}`);
           currentExampleAnswers.push(answers.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), ''));
         });
-        this.currentRows.push(currentExampleRows);
+        this.currentRows.push(currentExampleRows.map(value => parseInt(value).toString()));
         this.currentAnswers.push(currentExampleAnswers);
         this.answers.push(currentExampleAnswers[currentExampleAnswers.length - 1]);
       }

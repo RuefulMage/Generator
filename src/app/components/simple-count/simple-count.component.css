@@ -11,13 +11,14 @@
 .example {
   display: flex;
   flex-direction: column;
+  text-align: right;
 }
 
 .select:not(.select--multiple)::after {}
 
 select[multiple] {
   padding-right: 0;
-  height: 6rem;
+  height: 12rem;
 
 }
 

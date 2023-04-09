@@ -109,7 +109,7 @@ export class GeneratorService {
       return row;
     }
 
-    return this.getRowByCandidates(rows, allCandidates, candidates, positiveCandidates, negativeCandidates);
+    return this.getRowByCandidates(rows, allCandidates, candidates, positiveCandidates, negativeCandidates, digits);
   }
 
   private getFirstNumber(possibleDigits: number[]): number {
@@ -160,7 +160,8 @@ export class GeneratorService {
     allCandidates: number[][],
     candidates: number[][],
     positiveCandidates: number[][],
-    negativeCandidates: number[][]
+    negativeCandidates: number[][],
+    digitsInRowAmount: number
   ): IRow {
     const row: IRow = {
       digits: [],
@@ -168,23 +169,27 @@ export class GeneratorService {
       answers: []
     };
 
-    row.sign = this.calculateRowSign(rows, allCandidates, positiveCandidates, negativeCandidates);
+    const firstDigitNumber = candidates.length - digitsInRowAmount;
+    row.sign = this.calculateRowSign(rows,
+      positiveCandidates.slice(firstDigitNumber),
+      negativeCandidates.slice(firstDigitNumber));
     candidates = row.sign === 'positive' ? positiveCandidates : negativeCandidates;
     candidates.forEach((cands, index) => {
       let choosenCandidate = 0;
       if (cands.length !== 0) {
         choosenCandidate = getRandomFromList(cands);
-      } else {
-        const allSignCandidates = allCandidates[index].filter(cand => {
-          if (row.sign === 'positive') {
-            return cand > 0;
-          } else {
-            return cand < 0;
-          }
-        })
-
-        choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
       }
+      // else {
+      //   const allSignCandidates = allCandidates[index].filter(cand => {
+      //     if (row.sign === 'positive') {
+      //       return cand > 0;
+      //     } else {
+      //       return cand < 0;
+      //     }
+      //   })
+      //
+      //   choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
+      // }
 
       row.digits.push(choosenCandidate);
       row.answers.push(addFiveBasedNumbers(rows[rows.length - 1].answers[index], choosenCandidate));
@@ -193,15 +198,13 @@ export class GeneratorService {
     return row;
   }
 
-  private calculateRowSign(rows: IRow[], allCandidates: number[][], positiveCandidates: number[][], negativeCandidates: number[][]): Sign {
+  private calculateRowSign(rows: IRow[], positiveCandidates: number[][], negativeCandidates: number[][]): Sign {
     if (positiveCandidates[0].length === 0 || negativeCandidates[0].length === 0) {
       return positiveCandidates[0].length === 0 ? 'negative' : 'positive';
     }
 
-    const noPositiveCandidatesDigitsAmount = positiveCandidates
-      .reduce((accumulator, current) => current.length  < 1 ? accumulator + 1 : accumulator, 0);
-    const noNegativeCandidatesDigitsAmount = negativeCandidates
-      .reduce((accumulator, current) => current.length  < 1 ? accumulator + 1 : accumulator, 0);
+    const isEveryDigitHasPositive = positiveCandidates.every(item => item.length > 0);
+    const isEveryDigitHasNegative = negativeCandidates.every(item => item.length > 0);
 
     let prioritySign: Sign = getRandomFromList(['positive', 'negative']);
 
@@ -209,11 +212,20 @@ export class GeneratorService {
       prioritySign = rows[rows.length - 1].sign === 'positive' ? 'negative' : 'positive';
     }
 
-    if (noPositiveCandidatesDigitsAmount > 0 || noNegativeCandidatesDigitsAmount > 0) {
-      return noPositiveCandidatesDigitsAmount > noNegativeCandidatesDigitsAmount ? 'positive' :  'negative';
+    if (isEveryDigitHasPositive && prioritySign === 'positive') {
+      return 'positive';
+    } else if (isEveryDigitHasNegative && prioritySign === 'negative') {
+      return 'negative';
+    } else {
+      if (prioritySign === 'positive') {
+        return isEveryDigitHasNegative ? 'negative' : prioritySign;
+      } else {
+        return isEveryDigitHasPositive ? 'positive' : prioritySign;
+      }
     }
 
-    return prioritySign;
+
+    return 'positive';
   }
 
 
