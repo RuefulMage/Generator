@@ -72,8 +72,10 @@ export class GeneratorService {
     let candidates: number[][] = [];
     let allCandidates: number[][] = [];
     for (let digitIndex = 0; digitIndex < maxDigitsNumber; digitIndex++) {
+      const possibleDigitsWithoutUsed = possibleDigits.filter(digit => !row.digits.includes(digit));
+
       if (rows.length === 0) {
-        const firstNumber = this.getFirstNumber(possibleDigits);
+        const firstNumber = this.getFirstNumber(possibleDigitsWithoutUsed.length > 0 ? possibleDigitsWithoutUsed : possibleDigits);
         row.digits.push(firstNumber);
         row.answers.push(firstNumber);
         row.sign = 'positive';
@@ -198,8 +200,7 @@ export class GeneratorService {
 
       if (cands.length !== 0) {
         choosenCandidate = getRandomFromList(cands);
-      }
-      else {
+      } else {
         const allSignCandidates = allCandidates[index].filter(cand => {
           if (row.sign === 'positive') {
             return cand > 0;
