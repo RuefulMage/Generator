@@ -53,8 +53,16 @@ export class GeneratorService {
     const rows: IRow[] = [];
     const convertedPossibleDigits = possibleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
 
+    let usedDigits: number[] = [];
+
     for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
-      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits);
+      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits, usedDigits);
+      if (usedDigits.includes(currentDigits)) {
+        usedDigits = [];
+      }
+
+      usedDigits.push(currentDigits);
+
       rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits));
     }
 
@@ -75,10 +83,16 @@ export class GeneratorService {
       const possibleDigitsWithoutUsed = possibleDigits.filter(digit => !row.digits.includes(digit));
 
       if (rows.length === 0) {
-        const firstNumber = this.getFirstNumber(possibleDigitsWithoutUsed.length > 0 ? possibleDigitsWithoutUsed : possibleDigits);
-        row.digits.push(firstNumber);
-        row.answers.push(firstNumber);
-        row.sign = 'positive';
+        if (digitIndex < maxDigitsNumber - digits) {
+          row.digits.push(0);
+          row.answers.push(0);
+          row.sign = 'positive';
+        } else {
+          const firstNumber = this.getFirstNumber(possibleDigitsWithoutUsed.length > 0 ? possibleDigitsWithoutUsed : possibleDigits);
+          row.digits.push(firstNumber);
+          row.answers.push(firstNumber);
+          row.sign = 'positive';
+        }
       } else {
         if (digitIndex < maxDigitsNumber - digits) {
           candidates.push([0]);
@@ -147,8 +161,9 @@ export class GeneratorService {
     return getRandomFromList(positivePossibleDigits);
   }
 
-  private getDigitsAmountByAlternationMode(mode: AlternationMode, rowIndex: number, digits: number): number {
+  private getDigitsAmountByAlternationMode(mode: AlternationMode, rowIndex: number, digits: number, usedDigits: number[]): number {
     let computedDigits = digits;
+
     switch (mode) {
       case 'no':
         computedDigits = digits;
@@ -166,7 +181,10 @@ export class GeneratorService {
         }
         break;
       case 'multiple' :
-        const possibleDigitsAmount = getNumbersRange(1, digits);
+        const digitsList = getNumbersRange(1, digits);
+        const digitsWithoutUsed = digitsList.filter(dig => !usedDigits.includes(dig));
+
+        const possibleDigitsAmount = digitsWithoutUsed.length > 0 ? digitsWithoutUsed : digitsList;
         computedDigits = getRandomFromList(possibleDigitsAmount);
         break;
       default:
@@ -342,7 +360,6 @@ export class GeneratorService {
   }
 
   private isValidForSimpleCount(candidate: number, currentResult: number): boolean {
-    console.log(currentResult);
     if (candidate === 0) {
       return false;
     }
