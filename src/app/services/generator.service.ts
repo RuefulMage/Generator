@@ -195,20 +195,21 @@ export class GeneratorService {
     candidates = row.sign === 'positive' ? positiveCandidates : negativeCandidates;
     candidates.forEach((cands, index) => {
       let choosenCandidate = 0;
+
       if (cands.length !== 0) {
         choosenCandidate = getRandomFromList(cands);
       }
-      // else {
-      //   const allSignCandidates = allCandidates[index].filter(cand => {
-      //     if (row.sign === 'positive') {
-      //       return cand > 0;
-      //     } else {
-      //       return cand < 0;
-      //     }
-      //   })
-      //
-      //   choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
-      // }
+      else {
+        const allSignCandidates = allCandidates[index].filter(cand => {
+          if (row.sign === 'positive') {
+            return cand > 0;
+          } else {
+            return cand < 0;
+          }
+        })
+
+        choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
+      }
 
       row.digits.push(choosenCandidate);
       row.answers.push(addFiveBasedNumbers(rows[rows.length - 1].answers[index], choosenCandidate));
@@ -259,7 +260,6 @@ export class GeneratorService {
     let result = [];
     let currentResult = base;
     let currentNumber = -20;
-    debugger;
 
     if (isZeroing) {
       result.push(-base);
@@ -273,7 +273,6 @@ export class GeneratorService {
       return [result, result];
     }
 
-    debugger;
     while (compareFiveBasedNumbers(currentNumber, 20) === -1) {
       if (possibleAnswer.length > 0) {
         if (!possibleAnswer.find(item => item === addFiveBasedNumbers(currentNumber, currentResult))) {
@@ -359,7 +358,6 @@ export class GeneratorService {
       && getNumberOfDigitsInFiveBasedSystem(candidate) === 1
       && (addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) < 0
         || addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) > 4)) {
-      debugger;
       return false;
     }
 
