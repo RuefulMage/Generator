@@ -13,6 +13,8 @@ export type Sign = 'positive' | 'negative';
 
 export type AlternationMode = 'no' | 'on' | 'double' | 'multiple';
 
+export type Mode = 'simple' | 'brothers';
+
 interface IRow {
   digits: number[];
   answers: number[];
@@ -45,31 +47,15 @@ export class GeneratorService {
     return convertedRows;
   }
 
-  public generate(rowsAmount: number,
-                  digits: number,
-                  alternationMode: AlternationMode = 'no',
-                  possibleDigits: number[]
-  ): IRow[] {
-    const rows: IRow[] = [];
-    const convertedPossibleDigits = possibleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
-
-    let usedDigits: number[] = [];
-
-    for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
-      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits, usedDigits);
-      if (usedDigits.includes(currentDigits)) {
-        usedDigits = [];
-      }
-
-      usedDigits.push(currentDigits);
-
-      rows.push(this.generateOneRow(currentDigits, rows, digits, convertedPossibleDigits));
-    }
-
-    return this.convertExampleToDecimal(rows);
-  }
-
-  private generateOneRow(digits: number, rows: IRow[], maxDigitsNumber: number, possibleDigits: number[], possibleAnswers: number[] = []): IRow {
+  private generateOneRow(
+    digits: number,
+    rows: IRow[],
+    maxDigitsNumber: number,
+    possibleSimpleDigits: number[],
+    possibleBrothersDigits: number[],
+    possibleModes: Mode[] = ['simple'],
+    possibleAnswers: number[] = []
+  ): IRow {
     const row: IRow = {
       digits: [],
       answers: [],
@@ -80,8 +66,10 @@ export class GeneratorService {
     let candidates: number[][] = [];
     let allCandidates: number[][] = [];
     for (let digitIndex = 0; digitIndex < maxDigitsNumber; digitIndex++) {
-      const possibleDigitsWithoutUsed = possibleDigits.filter(digit => !row.digits.includes(digit));
-
+      const currentMode = getRandomFromList(possibleModes);
+      console.log(currentMode);
+      const possibleDigits = this.getPossibleValuesByMode(currentMode, possibleSimpleDigits, possibleBrothersDigits);
+      const possibleDigitsWithoutUsed = this.getPossibleValuesByMode(currentMode, possibleSimpleDigits, possibleBrothersDigits).filter(digit => !row.digits.includes(digit));
       if (rows.length === 0) {
         if (digitIndex < maxDigitsNumber - digits) {
           row.digits.push(0);
@@ -105,6 +93,7 @@ export class GeneratorService {
             rows.map(row => row.digits[digitIndex]),
             this.getPossibleDigitsByCurrentAnswer(possibleDigits),
             possibleAnswers || [],
+            this.getModeValidationFunction(currentMode),
             this.isNeedZeroing(possibleDigits, rows[rows.length - 1].answers),
             this.isNeedMaximize(possibleDigits, rows[rows.length - 1].answers));
           allCandidates.push(possibleValues[0]);
@@ -114,7 +103,6 @@ export class GeneratorService {
         }
       }
     }
-
     if (rows.length === 0) {
       return row;
     }
@@ -122,6 +110,48 @@ export class GeneratorService {
     return this.getRowByCandidates(rows, allCandidates, candidates, positiveCandidates, negativeCandidates, digits);
   }
 
+  public generate(rowsAmount: number,
+                  digits: number,
+                  alternationMode: AlternationMode = 'no',
+                  possibleSimpleDigits: number[],
+                  possibleBrothersDigits: number[],
+                  possibleModes: Mode[] = []
+  ): IRow[] {
+    debugger;
+    const rows: IRow[] = [];
+    const convertedSimplePossibleDigits = possibleSimpleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
+    const convertedBrothersPossibleDigits = possibleBrothersDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
+
+    let usedDigits: number[] = [];
+
+    for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
+      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits, usedDigits);
+      if (usedDigits.includes(currentDigits)) {
+        usedDigits = [];
+      }
+
+      usedDigits.push(currentDigits);
+
+      rows.push(this.generateOneRow(currentDigits, rows, digits, convertedSimplePossibleDigits, convertedBrothersPossibleDigits, possibleModes));
+    }
+
+    return this.convertExampleToDecimal(rows);
+  }
+
+  private getModeValidationFunction(mode: Mode): (candidate: number, currentResult: number) => boolean {
+    switch (mode) {
+      case "simple":
+        return this.isValidForSimpleCount.bind(this);
+      case "brothers":
+        return this.isValidForBrothers.bind(this);
+      default:
+        return this.isValidForSimpleCount.bind(this);
+    }
+  }
+
+  private getPossibleValuesByMode(mode: Mode, possibleSimpleValues: number[], possibleBrothersValues: number[]): number[] {
+    return mode === 'simple' ? possibleSimpleValues : possibleBrothersValues;
+  }
 
   private isNeedZeroing(possibleDigits: number[], currentAnswers: number[]): boolean {
     if (!possibleDigits.some(digit => digit < 0)) {
@@ -273,6 +303,7 @@ export class GeneratorService {
     currentExample: number[],
     possibleCandidates: number[],
     possibleAnswer: number[] = [],
+    modeValidationFunction: (candidate: number, currentResult: number) => boolean,
     isZeroing = false,
     isNeedMaximize = false
   ): [number[], number[]] {
@@ -300,7 +331,7 @@ export class GeneratorService {
         }
       }
 
-      if (this.isValidForSimpleCount(currentNumber, currentResult)) {
+      if (modeValidationFunction(currentNumber, currentResult)) {
         result.push(currentNumber);
       }
 
@@ -388,5 +419,37 @@ export class GeneratorService {
     }
 
     return true;
+  }
+
+  private isValidForBrothers(candidate: number, currentResult: number): boolean {
+    if (candidate === 0) {
+      return false;
+    }
+
+    if (compareFiveBasedNumbers(addFiveBasedNumbers(currentResult, candidate), 0) === -1) {
+      return false;
+    }
+
+    if (compareFiveBasedNumbers(addFiveBasedNumbers(currentResult, candidate), 20) !== -1) {
+      return false;
+    }
+
+    if (getNumberOfDigitsInFiveBasedSystem(currentResult) > 1
+      && getNumberOfDigitsInFiveBasedSystem(candidate) === 1
+      && (addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) >= 0
+        || addFiveBasedNumbers(getLastDigitInFiveBasedSystem(currentResult), candidate) > 4)) {
+      return false;
+    }
+
+    if (
+      getNumberOfDigitsInFiveBasedSystem(currentResult) === 1
+      && getNumberOfDigitsInFiveBasedSystem(candidate) === 1
+      && getNumberOfDigitsInFiveBasedSystem(addFiveBasedNumbers(currentResult, candidate)) === 1
+    ) {
+      return false;
+    }
+
+    return true;
+
   }
 }

@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {FormControl, FormGroup} from "@angular/forms";
-import {AlternationMode, GeneratorService} from "../../services/generator.service";
+import {AlternationMode, GeneratorService, Mode} from "../../services/generator.service";
 import {generate} from "rxjs";
 
 @Component({
@@ -13,13 +13,20 @@ export class SimpleCountComponent implements OnInit {
     rows: new FormControl(),
     digits: new FormControl(),
     alternation: new FormControl('no'),
-    positivePossibleDigits: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    negativePossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9])
+    isSimpleMode: new FormControl(false),
+    isBrothersMode: new FormControl(false),
+    positiveSimplePossibleDigits: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    negativeSimplePossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
+    positiveBrothersPossibleDigits: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    negativeBrothersPossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9])
   });
 
   currentRows: string[][] = [];
   currentAnswers: string[][] = [];
   answers: string[] = [];
+
+  selectedModes: Set<Mode> = new Set();
+
 
   constructor(private generator: GeneratorService) {
   }
@@ -30,8 +37,11 @@ export class SimpleCountComponent implements OnInit {
     this.answers = [];
 
     if (this.myForm.get('rows')?.value && this.myForm.get('rows')?.value) {
-      const possibleDigits = [...(this.myForm.get('positivePossibleDigits')?.value as Array<number>),
-        ...(this.myForm.get('negativePossibleDigits')?.value as Array<number>)
+      const possibleSimpleDigits = [...(this.myForm.get('positiveSimplePossibleDigits')?.value as Array<number>),
+        ...(this.myForm.get('negativeSimplePossibleDigits')?.value as Array<number>)
+      ];
+      const possibleBrothersDigits = [...(this.myForm.get('positiveBrothersPossibleDigits')?.value as Array<number>),
+        ...(this.myForm.get('negativeBrothersPossibleDigits')?.value as Array<number>)
       ];
 
       for (let i = 0; i < 10; i++) {
@@ -39,7 +49,9 @@ export class SimpleCountComponent implements OnInit {
           this.myForm.get('rows')?.value,
           this.myForm.get('digits')?.value,
           this.myForm.get('alternation')?.value as AlternationMode,
-          possibleDigits
+          possibleSimpleDigits,
+          possibleBrothersDigits,
+          Array.from(this.selectedModes)
         );
         const currentExampleRows: string[] = [];
         const currentExampleAnswers: string[] = [];
@@ -55,6 +67,20 @@ export class SimpleCountComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.myForm.get('isBrothersMode')?.valueChanges.subscribe(value => {
+      if (value) {
+        this.selectedModes.add('brothers');
+      } else {
+        this.selectedModes.delete('brothers');
+      }
+    });
+    this.myForm.get('isSimpleMode')?.valueChanges.subscribe(value => {
+      if (value) {
+        this.selectedModes.add('simple');
+      } else {
+        this.selectedModes.delete('simple');
+      }
+    })
   }
 
 
