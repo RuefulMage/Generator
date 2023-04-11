@@ -1,7 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {FormControl, FormGroup} from "@angular/forms";
 import {AlternationMode, GeneratorService, Mode} from "../../services/generator.service";
-import {generate} from "rxjs";
 
 @Component({
   selector: 'app-simple-count',
@@ -46,8 +45,8 @@ export class SimpleCountComponent implements OnInit {
 
       for (let i = 0; i < 10; i++) {
         const rows = this.generator.generate(
-          this.myForm.get('rows')?.value,
-          this.myForm.get('digits')?.value,
+          parseInt(this.myForm.get('rows')?.value),
+          parseInt(this.myForm.get('digits')?.value),
           this.myForm.get('alternation')?.value as AlternationMode,
           possibleSimpleDigits,
           possibleBrothersDigits,

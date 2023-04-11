@@ -117,15 +117,16 @@ export class GeneratorService {
                   possibleBrothersDigits: number[],
                   possibleModes: Mode[] = []
   ): IRow[] {
-    debugger;
     const rows: IRow[] = [];
     const convertedSimplePossibleDigits = possibleSimpleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
     const convertedBrothersPossibleDigits = possibleBrothersDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
 
     let usedDigits: number[] = [];
 
+    let currentDigits: number | null = null;
     for (let rowIndex = 0; rowIndex < rowsAmount; rowIndex++) {
-      const currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits, usedDigits);
+      if (rowIndex === 0) {}
+      currentDigits = this.getDigitsAmountByAlternationMode(alternationMode, rowIndex, digits, usedDigits, currentDigits);
       if (usedDigits.includes(currentDigits)) {
         usedDigits = [];
       }
@@ -191,7 +192,7 @@ export class GeneratorService {
     return getRandomFromList(positivePossibleDigits);
   }
 
-  private getDigitsAmountByAlternationMode(mode: AlternationMode, rowIndex: number, digits: number, usedDigits: number[]): number {
+  private getDigitsAmountByAlternationMode(mode: AlternationMode, rowIndex: number, digits: number, usedDigits: number[], previousDigit: number | null): number {
     let computedDigits = digits;
 
     switch (mode) {
@@ -202,12 +203,14 @@ export class GeneratorService {
         computedDigits = rowIndex % 2 === 0 ? digits : digits - 1;
         break;
       case 'double':
-        if (rowIndex % 3 === 0) {
-          computedDigits = digits;
-        } else if (rowIndex % 3 === 1) {
-          computedDigits = digits - 1;
+        if (previousDigit) {
+          if (previousDigit === digits) {
+            computedDigits = previousDigit - 2;
+          } else {
+            computedDigits = previousDigit + 1;
+          }
         } else {
-          computedDigits = digits - 2;
+          computedDigits = getRandomFromList([digits - 2, digits - 1, digits]);
         }
         break;
       case 'multiple' :
