@@ -23,7 +23,11 @@
       Простой счет
     </label>
     <div *ngIf="myForm.get('isSimpleMode')?.value">
-      <div>
+      <label>
+        <input type="checkbox" formControlName="isLimitedIntermediateAnswer">
+        Лимит на промежуточный ответ
+      </label>
+      <div class="">
         <div class="select select--multiple">
           <select multiple id="positiveSimplePossibleDigits" formControlName="positiveSimplePossibleDigits">
             <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>

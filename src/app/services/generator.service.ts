@@ -21,12 +21,22 @@ interface IRow {
   sign: Sign;
 }
 
+export type PossibleDigits = {
+  [key in Mode]: number[];
+};
+
 @Injectable({
   providedIn: 'root'
 })
 export class GeneratorService {
 
-  currentMode = 'simple';
+  rows: IRow[] = [];
+  rowsAmount: number = 1;
+  digits: number = 1;
+  possibleDigits: PossibleDigits = {brothers: [], simple: []};
+  limit: number | null = null;
+  isLimitedIntermediateAnswer = false;
+  possibleModes: Mode[] = ['simple'];
 
   constructor() {
   }
@@ -54,7 +64,7 @@ export class GeneratorService {
     possibleSimpleDigits: number[],
     possibleBrothersDigits: number[],
     possibleModes: Mode[] = ['simple'],
-    possibleAnswers: number[] = []
+    isLimitedIntermediateAnswer = false
   ): IRow {
     const row: IRow = {
       digits: [],
@@ -68,6 +78,11 @@ export class GeneratorService {
     for (let digitIndex = 0; digitIndex < maxDigitsNumber; digitIndex++) {
       const currentMode = getRandomFromList(possibleModes);
       console.log(currentMode);
+      const possibleAnswers: number[] = [];
+      if (currentMode === 'simple' && isLimitedIntermediateAnswer) {
+        debugger;
+        possibleAnswers.push(...possibleSimpleDigits);
+      }
       const possibleDigits = this.getPossibleValuesByMode(currentMode, possibleSimpleDigits, possibleBrothersDigits);
       const possibleDigitsWithoutUsed = this.getPossibleValuesByMode(currentMode, possibleSimpleDigits, possibleBrothersDigits).filter(digit => !row.digits.includes(digit));
       if (rows.length === 0) {
@@ -115,7 +130,8 @@ export class GeneratorService {
                   alternationMode: AlternationMode = 'no',
                   possibleSimpleDigits: number[],
                   possibleBrothersDigits: number[],
-                  possibleModes: Mode[] = []
+                  possibleModes: Mode[] = [],
+                  isLimitedIntermediateAnswer = false
   ): IRow[] {
     const rows: IRow[] = [];
     const convertedSimplePossibleDigits = possibleSimpleDigits.filter(digit => digit.toString() !== '-').map(digit => convertDecimalToFive(digit));
@@ -133,7 +149,7 @@ export class GeneratorService {
 
       usedDigits.push(currentDigits);
 
-      rows.push(this.generateOneRow(currentDigits, rows, digits, convertedSimplePossibleDigits, convertedBrothersPossibleDigits, possibleModes));
+      rows.push(this.generateOneRow(currentDigits, rows, digits, convertedSimplePossibleDigits, convertedBrothersPossibleDigits, possibleModes, isLimitedIntermediateAnswer));
     }
 
     return this.convertExampleToDecimal(rows);
@@ -180,7 +196,7 @@ export class GeneratorService {
     const positivePossibleDigits = possibleDigits.filter(digit => digit > 0);
     const negativePossibleDigits = possibleDigits.filter(digit => digit < 0);
     if (negativePossibleDigits.length === 0) {
-      return 0;
+      possibleDigits.sort();
     }
 
     if (positivePossibleDigits.length === 0) {
@@ -249,7 +265,11 @@ export class GeneratorService {
     candidates.forEach((cands, index) => {
       let choosenCandidate = 0;
 
-      if (cands.length !== 0) {
+      const candsWithoutUsedInCurrentRow = cands.filter(cand => !row.digits.includes(cand));
+      if (candsWithoutUsedInCurrentRow.length > 0) {
+        debugger;
+        choosenCandidate = getRandomFromList(candsWithoutUsedInCurrentRow);
+      } else if (cands.length !== 0) {
         choosenCandidate = getRandomFromList(cands);
       } else {
         const allSignCandidates = allCandidates[index].filter(cand => {
@@ -260,7 +280,12 @@ export class GeneratorService {
           }
         })
 
-        choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
+        const allSignCandidatesWithoutUsedInCurrentRow = allSignCandidates.filter(cand => !row.digits.includes(cand));
+        if (allSignCandidatesWithoutUsedInCurrentRow.length > 0) {
+          choosenCandidate = getRandomFromList(allSignCandidatesWithoutUsedInCurrentRow);
+        } else {
+          choosenCandidate = getRandomFromList(allSignCandidates.length > 0 ? allSignCandidates : [0]);
+        }
       }
 
       row.digits.push(choosenCandidate);
@@ -310,6 +335,7 @@ export class GeneratorService {
     isZeroing = false,
     isNeedMaximize = false
   ): [number[], number[]] {
+    console.log(possibleAnswer);
     let result = [];
     let currentResult = base;
     let currentNumber = -20;
@@ -344,6 +370,9 @@ export class GeneratorService {
     if (result.length < 1) {
       console.error(`result for base: ${base} is empty`);
       result.push(0);
+      if (possibleCandidates.includes(-base)) {
+        result.push(-base);
+      }
     }
 
     result = result.filter(digit => possibleCandidates.find(item => item === digit));
