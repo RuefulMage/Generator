@@ -3,6 +3,14 @@
   flex-wrap: wrap;
 }
 
+.wrapper {
+  display: flex;
+}
+
+.main-settings {
+  margin-bottom: 10px;
+}
+
 .example-wrapper {
   border: 2px solid black;
   padding: 5px;
@@ -16,6 +24,28 @@
 
 .select:not(.select--multiple)::after {}
 
+.number-select-group {
+  display: flex;
+}
+
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  align-items: flex-start;
+  margin-right: 20px;
+}
+
+.select {
+  margin: 0 10px;
+}
+
+.toggle-tests-button {
+  background: blue;
+  color: #fff;
+  margin: 10px 0;
+}
+
 select[multiple] {
   padding-right: 0;
   height: 12rem;
@@ -24,4 +54,33 @@ select[multiple] {
 
 select[multiple] option {
   white-space: normal;
+}
+
+.test-group {
+  margin: 10px 0;
+}
+
+.test-button {
+  margin: 0 10px;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
 }

@@ -1,7 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 import {FormControl, FormGroup} from "@angular/forms";
 import {AlternationMode, GeneratorService, Mode} from "../../services/generator.service";
-import {GeneratorService2, PossibleAnswers, PossibleDigits} from "../../services/generator-2.service";
+import {GeneratorService2, IProperColumn, PossibleAnswers, PossibleDigits} from "../../services/generator-2.service";
+import {convertDecimalToFive, convertFiveToDecimal} from "../../utils/utils";
+import {ChainGeneratorService} from "../../services/chain-generator.service";
 
 @Component({
   selector: 'app-simple-count',
@@ -28,8 +30,33 @@ export class SimpleCountComponent implements OnInit {
 
   selectedModes: Set<Mode> = new Set();
 
+  isTestsShown = false;
 
-  constructor(private generator: GeneratorService, private generator2: GeneratorService2) {
+  testsRows = 5;
+  testsColumns = 1;
+
+  table: Map<Mode, Map<number, number[]>> = new Map();
+
+  get tableKeys(): Mode[] {
+    return ['brothers'];
+    // return Array.from(this.table.keys());
+  }
+
+  getTableItemsKeysByMode(mode: Mode): number[] {
+    return Array.from(this.table.get(mode)?.keys() || []).map(value => convertFiveToDecimal(value)).filter(value => value > 0);
+  }
+
+  getTableItemsByNumber(mode: Mode, number: number): number[] {
+    number = convertDecimalToFive(number);
+
+    return Array.from(this.table.get(mode)?.get(number)?.map(value => convertFiveToDecimal(value)) || []);
+  }
+
+  constructor(
+    private generator: GeneratorService,
+    private generator2: GeneratorService2,
+    private chainGenerator: ChainGeneratorService
+  ) {
   }
 
   onSubmit() {
@@ -40,55 +67,55 @@ export class SimpleCountComponent implements OnInit {
     if (this.myForm.get('rows')?.value && this.myForm.get('rows')?.value) {
       const possibleSimpleDigits = [...(this.myForm.get('positiveSimplePossibleDigits')?.value as Array<number | '-'>),
         ...(this.myForm.get('negativeSimplePossibleDigits')?.value as Array<number | '-'>)
-      ];
+      ].filter(value => value !== '-') as number[];
       const possibleBrothersDigits = [...(this.myForm.get('positiveBrothersPossibleDigits')?.value as Array<number | '-'>),
         ...(this.myForm.get('negativeBrothersPossibleDigits')?.value as Array<number | '-'>)
-      ];
+      ].filter(value => value !== '-') as number[];
 
-      const rows = this.generator2.generate({
-        rowsAmount: parseInt(this.myForm.get('rows')?.value),
-        digits: parseInt(this.myForm.get('digits')?.value),
-        alternationMode:
-          this.myForm.get('alternation')?.value as AlternationMode,
-        possibleDigits: {
-          simple: possibleSimpleDigits.filter(value => value !== '-') as number[],
-          brothers: possibleBrothersDigits.filter(value => value !== '-') as number[]
-        },
-        possibleModes:
-          Array.from(this.selectedModes),
-        isLimitedIntermediateAnswer: this.myForm.get('isLimitedIntermediateAnswer')?.value || false,
-      });
-
-        const currentExampleRows: string[] = [];
-        const currentExampleAnswers: string[] = [];
-        rows.forEach(({sign, digits, answers}) => {
-          currentExampleRows.push(`${sign === 'negative' ? '-' : ''}${digits.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), '')}`);
-          currentExampleAnswers.push(answers.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), ''));
-        });
-        this.currentRows.push(currentExampleRows.map(value => parseInt(value).toString()));
-        this.currentAnswers.push(currentExampleAnswers);
-        this.answers.push(currentExampleAnswers[currentExampleAnswers.length - 1]);
-      // for (let i = 0; i < 10; i++) {
-      //   const rows = this.generator.generate(
-      //     parseInt(this.myForm.get('rows')?.value),
-      //     parseInt(this.myForm.get('digits')?.value),
-      //     this.myForm.get('alternation')?.value as AlternationMode,
-      //     possibleSimpleDigits,
-      //     possibleBrothersDigits,
-      //     Array.from(this.selectedModes),
-      //     this.myForm.get('isLimitedIntermediateAnswer')?.value || false
-      //   );
-      //   const currentExampleRows: string[] = [];
-      //   const currentExampleAnswers: string[] = [];
-      //   rows.forEach(({sign, digits, answers}) => {
-      //     currentExampleRows.push(`${sign === 'negative' ? '-' : ''}${digits.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), '')}`);
-      //     currentExampleAnswers.push(answers.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), ''));
-      //   });
-      //   this.currentRows.push(currentExampleRows.map(value => parseInt(value).toString()));
-      //   this.currentAnswers.push(currentExampleAnswers);
-      //   this.answers.push(currentExampleAnswers[currentExampleAnswers.length - 1]);
-      // }
+      this.generateExample(parseInt(this.myForm.get('rows')?.value), parseInt(this.myForm.get('digits')?.value), possibleBrothersDigits, possibleSimpleDigits);
     }
+  }
+
+  generateExample(rows: number, columns: number, possibleBrothers: number[], possibleSimple: number[] = [-1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9]): void {
+    this.currentRows = [];
+    this.currentAnswers = [];
+    this.answers = [];
+
+    this.chainGenerator.setParamsForGenerator({
+      rowsAmount: this.testsRows,
+      digits: this.testsColumns,
+      alternationMode: 'no',
+      possibleDigits: {
+        simple: possibleSimple,
+        brothers: possibleBrothers
+      },
+      possibleModes: ['simple', 'brothers'],
+      isLimitedIntermediateAnswer: false,
+    });
+
+    for (let i = 0; i < 10; i++) {
+      const result = this.chainGenerator.getExample();
+      if (!result) {
+        return;
+      }
+
+      const generatedRows = result.example;
+      this.table = result.table;
+
+      const currentExampleRows: string[] = [];
+      const currentExampleAnswers: string[] = [];
+      generatedRows.forEach(({sign, digits, answers}) => {
+        currentExampleRows.push(`${sign === 'negative' ? '-' : ''}${digits.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), '')}`);
+        currentExampleAnswers.push(answers.reduce((accumulator, current) => accumulator += Math.abs(current).toString(), ''));
+      });
+      this.currentRows.push(currentExampleRows.map(value => parseInt(value).toString()));
+      this.currentAnswers.push(currentExampleAnswers);
+      this.answers.push(currentExampleAnswers[currentExampleAnswers.length - 1]);
+    }
+  }
+
+  toggleTests() {
+    this.isTestsShown = !this.isTestsShown;
   }
 
   ngOnInit(): void {

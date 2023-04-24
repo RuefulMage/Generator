@@ -1,73 +1,143 @@
 <form [formGroup]="myForm" (ngSubmit)="onSubmit()">
-  <label>
-    Кол-во рядов:
-    <input type="length" formControlName="rows">
-  </label>
-  <label>
-    Кол-во цифр:
-    <input type="length" formControlName="digits">
-  </label>
-  <label>
-    Чередование
-    <select formControlName="alternation">
-      <option value="no">Нет</option>
-      <option value="on">Обычное</option>
-      <option value="double">Двойное</option>
-      <option value="multiple">Множественное</option>
-    </select>
-  </label>
-
-  <div class="mode-wrapper">
+  <div class="main-settings">
     <label>
-      <input type="checkbox" formControlName="isSimpleMode">
-      Простой счет
+      Кол-во рядов:
+      <input type="length" formControlName="rows">
     </label>
-    <div *ngIf="myForm.get('isSimpleMode')?.value">
-      <label>
-        <input type="checkbox" formControlName="isLimitedIntermediateAnswer">
-        Лимит на промежуточный ответ
-      </label>
-      <div class="">
-        <div class="select select--multiple">
-          <select multiple id="positiveSimplePossibleDigits" formControlName="positiveSimplePossibleDigits">
-            <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
-          </select>
-        </div>
+    <label>
+      Кол-во цифр:
+      <input type="length" formControlName="digits">
+    </label>
+    <label>
 
-      </div>
-      <div>
-        <select multiple formControlName="negativeSimplePossibleDigits">
-          <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
-        </select>
-      </div>
-    </div>
+      Чередование
+      <select formControlName="alternation">
+        <option value="no">Нет</option>
+        <option value="on">Обычное</option>
+        <option value="double">Двойное</option>
+        <option value="multiple">Множественное</option>
+      </select>
+    </label>
   </div>
 
-  <div class="mode-wrapper">
-    <label>
-      <input type="checkbox" formControlName="isBrothersMode">
-      Братья
-    </label>
-    <div *ngIf="myForm.get('isBrothersMode')?.value">
-      <div>
-        <div class="select select--multiple">
-          <select multiple id="positiveBrothersPossibleDigits" formControlName="positiveBrothersPossibleDigits">
-            <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
-          </select>
-        </div>
+  <div class="wrapper">
+    <div class="modes">
+      <div class="mode-wrapper">
+        <label>
+          <input type="checkbox" formControlName="isSimpleMode">
+          Простой счет
+        </label>
+        <div *ngIf="myForm.get('isSimpleMode')?.value">
+          <label>
+            <input type="checkbox" formControlName="isLimitedIntermediateAnswer">
+            Лимит на промежуточный ответ
+          </label>
+          <div class="number-select-group">
+            <div class="select select--multiple">
+              <select multiple id="positiveSimplePossibleDigits" formControlName="positiveSimplePossibleDigits">
+                <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
+              </select>
+            </div>
 
+            <div class="select">
+              <select multiple formControlName="negativeSimplePossibleDigits">
+                <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <select multiple formControlName="negativeBrothersPossibleDigits">
-          <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
-        </select>
+
+      <div class="mode-wrapper">
+        <label>
+          <input type="checkbox" formControlName="isBrothersMode">
+          Братья
+        </label>
+        <div *ngIf="myForm.get('isBrothersMode')?.value">
+          <div class="number-select-group">
+            <div class="select select--multiple">
+              <select multiple id="positiveBrothersPossibleDigits" formControlName="positiveBrothersPossibleDigits">
+                <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
+              </select>
+            </div>
+
+            <div class="select">
+              <select multiple formControlName="negativeBrothersPossibleDigits">
+                <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <table *ngFor="let mode of tableKeys">
+
+      <thead>
+      <tr>
+        <th></th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let item of getTableItemsKeysByMode(mode)">
+        <td>{{item}}</td>
+        <td>{{getTableItemsByNumber(mode, item)}}</td>
+      </tr>
+      </tbody>
+    </table>
+
   </div>
-
-
-  <button type="submit">Submit</button>
+  <button type="submit">Сгенерировать пример</button>
 </form>
+
+<button class="toggle-tests-button" (click)="toggleTests()">Показать тесты</button>
+
+<div class="tests" *ngIf="isTestsShown">
+  <label>
+    Ряды:
+    <input type="length" [(ngModel)]="testsRows">
+  </label>
+  <label>
+    Цифры:
+    <input type="length" [(ngModel)]="testsColumns">
+  </label>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [1])">+1</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-1])">-1</button>
+    <button class="test-button" (click)="generateExample(5, 1, [1, -1])">+1, -1</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [2])">+2</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-2])">-2</button>
+    <button class="test-button" (click)="generateExample(5, 1, [2, -2])">+2, -2</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [3])">+3</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-3])">-3</button>
+    <button class="test-button" (click)="generateExample(5, 1, [3, -3])">+3, -3</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [4])">+4</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-4])">-4</button>
+    <button class="test-button" (click)="generateExample(5, 1, [4, -4])">+4, -4</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [1, 2])">1, 2</button>
+    <button class="test-button" (click)="generateExample(5, 1, [1, 2, 3])">1, 2, 3</button>
+    <button class="test-button" (click)="generateExample(5, 1, [1, 2, 3, 4])">1, 2, 3, 4</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [-1, -2])">-1, -2</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-1, -2, -3])">-1, -2, -3</button>
+    <button class="test-button" (click)="generateExample(5, 1, [-1, -2, -3, -4])">-1, -2, -3, -4</button>
+  </div>
+  <div class="test-group">
+    <button class="test-button" (click)="generateExample(5, 1, [1, 2, -1])">1, 2, -1</button>
+    <button class="test-button" (click)="generateExample(5, 1, [1, -2, -1])">1, -2, -1</button>
+    <button class="test-button" (click)="generateExample(5, 1, [1, 2, -3, -4])">1, 2, -3, -4</button>
+  </div>
+</div>
 
 <div class="examples">
   <div class="example-wrapper" *ngFor="let example of currentRows; index as j">

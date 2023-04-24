@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {
   addFiveBasedNumbers,
   compareFiveBasedNumbers, convertDecimalToFive,
-  convertFiveToDecimal,
+  convertFiveToDecimal, findIntersectionForTwoDimensionArray,
   getArrayModulesDifference,
   getLastDigitInFiveBasedSystem,
   getNumberOfDigitsInFiveBasedSystem, getNumbersRange,
@@ -15,7 +15,7 @@ export type AlternationMode = 'no' | 'on' | 'double' | 'multiple';
 
 export type Mode = 'simple' | 'brothers';
 
-interface IRow {
+export interface IRow {
   digits: number[];
   answers: number[];
   sign: Sign;
@@ -48,6 +48,11 @@ export interface IProperColumn {
   combinationsForBrothers: number[][];
 }
 
+export interface IExample {
+ example: IRow[];
+ table: Map<Mode, Map<number, number[]>>;
+ usedCombinations: number[][];
+}
 @Injectable({
   providedIn: 'root'
 })
@@ -63,6 +68,7 @@ export class GeneratorService2 {
   isLimitedIntermediateAnswer = false;
   possibleModes: Mode[] = ['simple'];
   alternationMode: AlternationMode = 'no';
+  usedCombinations: number[][] = [];
 
   properRows: Map<number, IProperColumn[]> = new Map();
 
@@ -77,7 +83,10 @@ export class GeneratorService2 {
   constructor() {
   }
 
-  public generate(params: IExampleGeneratorParams): IRow[] {
+  public generate(params: IExampleGeneratorParams, usedCombinations: number[][] = []): IExample {
+    this.reset();
+
+    this.usedCombinations = usedCombinations;
     const {
       rowsAmount,
       digits,
@@ -107,9 +116,8 @@ export class GeneratorService2 {
     this.generatePossibleValuesTables();
 
     const example = this.generateExample();
-    this.reset();
 
-    return example;
+    return {example, table: this.possibleValuesTables, usedCombinations: this.usedCombinations};
   }
 
   private generateExample(): IRow[] {
@@ -156,6 +164,10 @@ export class GeneratorService2 {
 
       const selectedColumns = this.selectFromColumns(filteredColumns);
       this.fillRowsByColumns(selectedColumns);
+
+      this.usedCombinations = [];
+      selectedColumns.forEach(({combinationsForBrothers}) => this.usedCombinations.push(...combinationsForBrothers));
+
       this.convertRowsToDecimal();
     } else {
       for (let rowIndex = 0; rowIndex < this.maxRowsAmount; rowIndex++) {
@@ -216,24 +228,38 @@ export class GeneratorService2 {
   }
 
   private selectFromColumns(columns: Map<number, IProperColumn[]>): IProperColumn[] {
+    if (this.lastColumn) {
+      this.usedCombinations.push(...this.lastColumn?.combinationsForBrothers);
+    }
+
     return this.columnsLength.map((length, index) => {
-      const usedCombinations: number[][] = [];
 
       if (index === this.digits - 1 && this.lastColumn) {
         return this.lastColumn;
       }
 
       let columnsForCurrentLength = columns.get(length)
-        ?.filter(({isSelected, combinationsForBrothers}) =>
-          this.getArraysDifference(combinationsForBrothers, usedCombinations).length > 0 && !isSelected);
+        ?.filter(({isSelected, combinationsForBrothers}) => {
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
 
-      if (!columnsForCurrentLength) {
-        columnsForCurrentLength = columns.get(length)?.filter(({isSelected}) => !isSelected);
+          return intersection.length === 0 && !isSelected
+        }) || [];
+
+      if (columnsForCurrentLength.length === 0) {
+        columnsForCurrentLength = columns.get(length)
+          ?.filter(({isSelected, combinationsForBrothers}) =>
+            this.getArraysDifference(combinationsForBrothers, this.usedCombinations).length > 0 && !isSelected) || [];
       }
 
-      if (columnsForCurrentLength) {
-        const selectedColumns = getRandomFromList(columnsForCurrentLength);
+      if (columnsForCurrentLength.length === 0) {
+        columnsForCurrentLength = columns.get(length)?.filter(({isSelected}) => !isSelected) || [];
+      }
+
+      if (columnsForCurrentLength.length !== 0) {
+        const selectedColumns = getRandomFromList(this.shuffleArray(columnsForCurrentLength));
+
         selectedColumns.isSelected = true;
+        this.usedCombinations.push(...selectedColumns.combinationsForBrothers);
 
         return selectedColumns;
       }
@@ -248,11 +274,28 @@ export class GeneratorService2 {
     });
   }
 
+  private shuffleArray<T>(array: T[]): T[] {
+    const arrayCopy = [...array];
+
+    for (let i = arrayCopy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arrayCopy[i], arrayCopy[j]] = [arrayCopy[j], arrayCopy[i]];
+    }
+
+    return  arrayCopy;
+  }
+
   private filterColumnsBySameSignAtSameIndexes(): Map<number, IProperColumn[]> {
     const lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]);
 
     if (!lastColumnPossibleColumns) {
       return new Map<number, IProperColumn[]>();
+    }
+
+    if (this.columnsLength.length === 1) {
+      // const numberOfSelection = lastColumnPossibleColumns.length > 40 ? 40 : lastColumnPossibleColumns.length;
+
+      return (new Map()).set(this.columnsLength[this.columnsLength.length - 1], lastColumnPossibleColumns);
     }
 
     lastColumnPossibleColumns
@@ -477,7 +520,7 @@ export class GeneratorService2 {
       if (this.possibleValuesTables.get('brothers')?.get(answer)?.includes(value)) {
         const prevValue = column[index - 1];
 
-        combinations.push([answer, prevValue, value]);
+        combinations.push([prevValue, value]);
       }
 
       answer = addFiveBasedNumbers(answer, value);
@@ -486,7 +529,7 @@ export class GeneratorService2 {
     return combinations;
   }
 
-  private generatePossibleValuesTables(): void {
+  public generatePossibleValuesTables(): Map<Mode, Map<number, number[]>> {
     this.possibleModes.forEach(mode => {
         const possibleValues: Map<number, number[]> = new Map<number, number[]>();
 
@@ -500,6 +543,8 @@ export class GeneratorService2 {
         this.possibleValuesTables.set(mode, possibleValues);
       }
     );
+
+    return this.possibleValuesTables;
   }
 
   private isValidDigitForCurrentAnswerByMode(answer: number, mode: Mode, value: number): boolean {
@@ -513,6 +558,10 @@ export class GeneratorService2 {
 
   private isValidDigitForSimpleMode(answer: number, value: number): boolean {
     if (value === 0) {
+      return false;
+    }
+
+    if (addFiveBasedNumbers(answer, value) === 0) {
       return false;
     }
 
@@ -548,6 +597,10 @@ export class GeneratorService2 {
     }
 
     if (value === 0) {
+      return false;
+    }
+
+    if (addFiveBasedNumbers(answer, value) === 0) {
       return false;
     }
 
@@ -615,6 +668,7 @@ export class GeneratorService2 {
     this.columnsLength = [];
     this.rowsLengths = [];
     this.lastColumn = null;
+    this.usedCombinations = [];
 
   }
 

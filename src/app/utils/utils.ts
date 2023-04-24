@@ -232,3 +232,17 @@ function addFiveBasedNumbersByString(num1: string, num2: string): string {
 
   return result;
 }
+
+export function findIntersectionForTwoDimensionArray(arr1: number[][], arr2: number[][]) {
+  const intersection: number[][] = [];
+
+  arr1.forEach((a) => {
+    arr2.forEach((b) => {
+      if (a[0] === b[0] && a[1] === b[1]) {
+        intersection.push(a);
+      }
+    });
+  });
+
+  return intersection;
+}
