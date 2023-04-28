@@ -38,6 +38,7 @@ export interface IExampleGeneratorParams {
   isLimitedIntermediateAnswer?: boolean;
   limit?: number;
   possibleAnswers?: PossibleAnswers;
+  isAllDischarge?: boolean;
 }
 
 export interface IProperColumn {
@@ -49,10 +50,11 @@ export interface IProperColumn {
 }
 
 export interface IExample {
- example: IRow[];
- table: Map<Mode, Map<number, number[]>>;
- usedCombinations: number[][];
+  example: IRow[];
+  table: Map<Mode, Map<number, number[]>>;
+  usedCombinations: number[][];
 }
+
 @Injectable({
   providedIn: 'root'
 })
@@ -69,8 +71,13 @@ export class GeneratorService2 {
   possibleModes: Mode[] = ['simple'];
   alternationMode: AlternationMode = 'no';
   usedCombinations: number[][] = [];
+  excludedColumns: number[][] = [];
+  priorityDigits: number[] = [];
+  isAllDischarge = false;
 
   properRows: Map<number, IProperColumn[]> = new Map();
+
+  properSimpleRows: Map<number, IProperColumn[]> = new Map();
 
   possibleValuesTables: Map<Mode, Map<number, number[]>> = new Map();
 
@@ -80,11 +87,19 @@ export class GeneratorService2 {
 
   lastColumn: IProperColumn | null = null;
 
+  selectedColumns: IProperColumn[] = [];
+
   constructor() {
   }
 
-  public generate(params: IExampleGeneratorParams, usedCombinations: number[][] = []): IExample {
+  public generate(params: IExampleGeneratorParams,
+                  usedCombinations: number[][] = [],
+                  excludedColumns: number[][] = [],
+                  priorityDigits: number[] = []
+  ): IExample {
     this.reset();
+    this.excludedColumns = excludedColumns;
+    this.priorityDigits = priorityDigits;
 
     this.usedCombinations = usedCombinations;
     const {
@@ -95,8 +110,15 @@ export class GeneratorService2 {
       possibleModes,
       isLimitedIntermediateAnswer,
       limit,
-      possibleAnswers
+      possibleAnswers,
+      isAllDischarge
     } = params;
+
+    if (possibleDigits.simple.filter(value => value > 0).length === 0) {
+      possibleDigits.simple.push(-Math.min(...possibleDigits.simple));
+    } else if (possibleDigits.simple.filter(value => value < 0).length === 0) {
+      possibleDigits.simple.push(-Math.max(...possibleDigits.simple));
+    }
 
     this.maxRowsAmount = rowsAmount;
     this.digits = digits;
@@ -112,6 +134,7 @@ export class GeneratorService2 {
     this.possibleModes = possibleModes;
     this.isLimitedIntermediateAnswer = isLimitedIntermediateAnswer || false;
     this.limit = limit ? convertDecimalToFive(limit) : null;
+    this.isAllDischarge = !!(this.digits > 1 && isAllDischarge);
 
     this.generatePossibleValuesTables();
 
@@ -162,11 +185,11 @@ export class GeneratorService2 {
         filteredColumns = this.filterColumnsBySameSignAtSameIndexes();
       }
 
-      const selectedColumns = this.selectFromColumns(filteredColumns);
-      this.fillRowsByColumns(selectedColumns);
+      this.selectedColumns = this.selectFromColumns(filteredColumns);
+      this.fillRowsByColumns(this.selectedColumns);
 
       this.usedCombinations = [];
-      selectedColumns.forEach(({combinationsForBrothers}) => this.usedCombinations.push(...combinationsForBrothers));
+      this.selectedColumns.forEach(({combinationsForBrothers}) => this.usedCombinations.push(...combinationsForBrothers));
 
       this.convertRowsToDecimal();
     } else {
@@ -238,25 +261,59 @@ export class GeneratorService2 {
         return this.lastColumn;
       }
 
-      let columnsForCurrentLength = columns.get(length)
-        ?.filter(({isSelected, combinationsForBrothers}) => {
-          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+      let shuffledColumns = columns.get(length) ? this.shuffleArray(this.shuffleArray(columns.get(length)!)) : [];
 
-          return intersection.length === 0 && !isSelected
+      let columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers, values}) => {
+          const isPriority = this.priorityDigits.every(digit => combinationsForBrothers.find(values => values[1] === digit));
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+          return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
         }) || [];
 
       if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = columns.get(length)
+        columnsForCurrentLength = shuffledColumns
+          ?.filter(({isSelected, combinationsForBrothers, values}) => {
+            const isPriority = this.priorityDigits.some(digit => combinationsForBrothers.find(values => values[1] === digit));
+            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+            const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+            return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
+          }) || [];
+      }
+
+      if (columnsForCurrentLength.length === 0) {
+        columnsForCurrentLength = shuffledColumns
+          ?.filter(({isSelected, combinationsForBrothers, values}) => {
+            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+            const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+            return intersection.length === 0 && !isSelected && !isColumnUsed;
+          }) || [];
+      }
+
+      if (columnsForCurrentLength.length === 0) {
+        columnsForCurrentLength = shuffledColumns
+          ?.filter(({isSelected, combinationsForBrothers}) => {
+            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+
+            return intersection.length === 0 && !isSelected
+          }) || [];
+      }
+
+      if (columnsForCurrentLength.length === 0) {
+        columnsForCurrentLength = shuffledColumns
           ?.filter(({isSelected, combinationsForBrothers}) =>
             this.getArraysDifference(combinationsForBrothers, this.usedCombinations).length > 0 && !isSelected) || [];
       }
 
       if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = columns.get(length)?.filter(({isSelected}) => !isSelected) || [];
+        columnsForCurrentLength = shuffledColumns?.filter(({isSelected}) => !isSelected) || [];
       }
 
       if (columnsForCurrentLength.length !== 0) {
-        const selectedColumns = getRandomFromList(this.shuffleArray(columnsForCurrentLength));
+        const selectedColumns = getRandomFromList(this.shuffleArray(this.shuffleArray(columnsForCurrentLength)));
 
         selectedColumns.isSelected = true;
         this.usedCombinations.push(...selectedColumns.combinationsForBrothers);
@@ -282,19 +339,33 @@ export class GeneratorService2 {
       [arrayCopy[i], arrayCopy[j]] = [arrayCopy[j], arrayCopy[i]];
     }
 
-    return  arrayCopy;
+    return arrayCopy;
   }
 
   private filterColumnsBySameSignAtSameIndexes(): Map<number, IProperColumn[]> {
-    const lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]);
+    let lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]) || [];
+
+    lastColumnPossibleColumns = lastColumnPossibleColumns
+      .filter(({combinationsForBrothers}) => this.priorityDigits
+        .every(digit => combinationsForBrothers.find(values => values[1] === digit))
+      ) || [];
+
+    if (lastColumnPossibleColumns.length === 0) {
+      lastColumnPossibleColumns = lastColumnPossibleColumns
+        .filter(({combinationsForBrothers}) => this.priorityDigits
+          .some(digit => combinationsForBrothers.find(values => values[1] === digit))
+        ) || [];
+    }
+
+    if (lastColumnPossibleColumns.length === 0) {
+      lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]) || [];
+    }
 
     if (!lastColumnPossibleColumns) {
       return new Map<number, IProperColumn[]>();
     }
 
     if (this.columnsLength.length === 1) {
-      // const numberOfSelection = lastColumnPossibleColumns.length > 40 ? 40 : lastColumnPossibleColumns.length;
-
       return (new Map()).set(this.columnsLength[this.columnsLength.length - 1], lastColumnPossibleColumns);
     }
 
@@ -461,6 +532,14 @@ export class GeneratorService2 {
           isSelected: false,
           combinationsForBrothers: []
         });
+      } else if (this.isAllDischarge && this.possibleModes.includes("brothers") && brothersCombinations.length === 0) {
+        this.properSimpleRows.get(depth)?.push({
+          values: currentColumn,
+          brothersNumberCount: 0,
+          uniqueNumberAmount,
+          isSelected: false,
+          combinationsForBrothers: []
+        });
       }
     }
 
@@ -561,7 +640,7 @@ export class GeneratorService2 {
       return false;
     }
 
-    if (addFiveBasedNumbers(answer, value) === 0) {
+    if (addFiveBasedNumbers(answer, value) === 0 && this.possibleModes.length > 1) {
       return false;
     }
 
@@ -669,6 +748,9 @@ export class GeneratorService2 {
     this.rowsLengths = [];
     this.lastColumn = null;
     this.usedCombinations = [];
+    this.excludedColumns = [];
+    this.priorityDigits = [];
+    this.selectedColumns = [];
 
   }
 

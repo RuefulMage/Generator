@@ -21,11 +21,13 @@ export class SimpleCountComponent implements OnInit {
     negativeSimplePossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
     positiveBrothersPossibleDigits: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     negativeBrothersPossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
-    isLimitedIntermediateAnswer: new FormControl(false)
+    isLimitedIntermediateAnswer: new FormControl(false),
+    isAllDischarge: new FormControl(false)
   });
 
   currentRows: string[][] = [];
   currentAnswers: string[][] = [];
+  usedFormulas: number[][] = [];
   answers: string[] = [];
 
   selectedModes: Set<Mode> = new Set();
@@ -72,25 +74,43 @@ export class SimpleCountComponent implements OnInit {
         ...(this.myForm.get('negativeBrothersPossibleDigits')?.value as Array<number | '-'>)
       ].filter(value => value !== '-') as number[];
 
-      this.generateExample(parseInt(this.myForm.get('rows')?.value), parseInt(this.myForm.get('digits')?.value), possibleBrothersDigits, possibleSimpleDigits);
+      this.generateExample({
+        rows: parseInt(this.myForm.get('rows')?.value),
+        columns: parseInt(this.myForm.get('digits')?.value),
+        possibleBrothers: possibleBrothersDigits,
+        possibleSimple: possibleSimpleDigits,
+        possibleModes:
+          Array.from(this.selectedModes)
+      });
     }
   }
 
-  generateExample(rows: number, columns: number, possibleBrothers: number[], possibleSimple: number[] = [-1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9]): void {
+  generateExample(props: {
+    rows?: number,
+    columns?: number,
+    possibleBrothers?: number[],
+    possibleSimple?: number[],
+    possibleModes?: Mode[]
+  }): void {
     this.currentRows = [];
     this.currentAnswers = [];
     this.answers = [];
+    this.usedFormulas = [];
+
+    const possibleSimple: number[] = props.possibleSimple || [-1, -2, -3, -4, -5, -6, -7, -8, -9, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const possibleModes: Mode[] = props.possibleModes || ['simple'];
 
     this.chainGenerator.setParamsForGenerator({
-      rowsAmount: this.testsRows,
-      digits: this.testsColumns,
-      alternationMode: 'no',
+      rowsAmount: props.rows || parseInt(this.testsRows.toString()),
+      digits: props.columns || parseInt(this.testsColumns.toString()),
+      alternationMode: (this.myForm.get('alternation')?.value || 'no') as AlternationMode,
       possibleDigits: {
         simple: possibleSimple,
-        brothers: possibleBrothers
+        brothers: props.possibleBrothers || []
       },
-      possibleModes: ['simple', 'brothers'],
+      possibleModes,
       isLimitedIntermediateAnswer: false,
+      isAllDischarge: this.myForm.get('isisAllDischarge')?.value || false
     });
 
     for (let i = 0; i < 10; i++) {
@@ -111,6 +131,7 @@ export class SimpleCountComponent implements OnInit {
       this.currentRows.push(currentExampleRows.map(value => parseInt(value).toString()));
       this.currentAnswers.push(currentExampleAnswers);
       this.answers.push(currentExampleAnswers[currentExampleAnswers.length - 1]);
+      this.usedFormulas.push(result.usedCombinations.map(value => value[1]));
     }
   }
 
