@@ -11,13 +11,18 @@ import {
 
 export type Sign = 'positive' | 'negative';
 
+// no - нет чередования
+// on - каждый пример чередуется с предыдущим по кол-ву цифр в ряду. Например, 4-3-4-3-4 при выбранном кол-ве цифр - 4
+// double - цикл чередования равен трем рядам. Например, 4-3-2-4-3-2-4 при выбранном кол-ве цифр - 4
+// multiple - в каждом ряду рандомно выбирается кол-во цифр от 1 до выбранного. Например, 4-1-2-4-4-3-1 при выбранном кол-ве цифр - 4
+// каждое чередование не обязательно начинается с выбранного кол-ва цифр
 export type AlternationMode = 'no' | 'on' | 'double' | 'multiple';
 
 export type Mode = 'simple' | 'brothers';
 
 export interface IRow {
-  digits: number[];
-  answers: number[];
+  digits: number[]; // хранит числа столбца
+  answers: number[]; // хранит все промежуточные и финальный ответы
   sign: Sign;
 }
 
@@ -30,17 +35,17 @@ export type PossibleAnswers = {
 };
 
 export interface IExampleGeneratorParams {
-  rowsAmount: number;
-  digits: number;
-  alternationMode: AlternationMode;
-  possibleDigits: PossibleDigits;
-  possibleModes: Mode[];
-  isLimitedIntermediateAnswer?: boolean;
-  limit?: number;
-  possibleAnswers?: PossibleAnswers;
-  isAllDischarge?: boolean;
+  rowsAmount: number; // кол-во рядов
+  digits: number; // кол-во цифр
+  alternationMode: AlternationMode; // чередование
+  possibleDigits: PossibleDigits; // выбранные числа, которые могут использоваться в примере
+  possibleModes: Mode[]; // режим примера - простой счет или братья
+  isLimitedIntermediateAnswer?: boolean; // определяет, может ли промежуточный ответ быть вне списка выбранных цифр
+  possibleAnswers?: PossibleAnswers; // список возможных цифр промежуточном и финальном ответах
+  isAllDischarge?: boolean; // если выбрано, то формулы на всех разрядах кроме старшего
 }
 
+// Является объектом, который хранит ряд, содержащий как минимум одну формулу братьев
 export interface IProperColumn {
   values: number[];
   brothersNumberCount: number;
@@ -75,6 +80,7 @@ export class GeneratorService2 {
   priorityDigits: number[] = [];
   isAllDischarge = false;
 
+  // в качестве ключа тут длина хранимых в значении столбцов
   properRows: Map<number, IProperColumn[]> = new Map();
 
   properSimpleRows: Map<number, IProperColumn[]> = new Map();
@@ -109,7 +115,6 @@ export class GeneratorService2 {
       possibleDigits,
       possibleModes,
       isLimitedIntermediateAnswer,
-      limit,
       possibleAnswers,
       isAllDischarge
     } = params;
@@ -133,7 +138,6 @@ export class GeneratorService2 {
     };
     this.possibleModes = possibleModes;
     this.isLimitedIntermediateAnswer = isLimitedIntermediateAnswer || false;
-    this.limit = limit ? convertDecimalToFive(limit) : null;
     this.isAllDischarge = !!(this.digits > 1 && isAllDischarge);
 
     this.generatePossibleValuesTables();
@@ -154,7 +158,7 @@ export class GeneratorService2 {
         i = addFiveBasedNumbers(i, 1);
       }
 
-
+      // Столбцы сортируются по кол-ву использованных формул братьев, а потом по кол-ву уникальных чисел
       this.properRows.forEach((value, key) => {
         this.properRows.set(key, value.sort((value1, value2) => {
           if (value1.brothersNumberCount < value2.brothersNumberCount) {
@@ -175,6 +179,7 @@ export class GeneratorService2 {
 
       let filteredColumns = this.filterColumnsBySameSignAtSameIndexes();
 
+      // Есть вероятность, что невозможно набрать нужное кол-во столбцов с выбранными длинами столбцов
       while (filteredColumns.size === 0) {
         if (filteredColumns.size === 0) {
           console.error('No columns combinations for this rows and columns lengths');
@@ -201,6 +206,7 @@ export class GeneratorService2 {
     return this.rows;
   }
 
+  // Из выбранных столбцов формируются строки нужных длин
   private fillRowsByColumns(columns: IProperColumn[]): void {
     this.rowsLengths.forEach((rowLength, rowIndex) => {
       const row: IRow = {digits: [], answers: [], sign: 'positive'};
