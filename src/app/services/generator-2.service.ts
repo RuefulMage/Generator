@@ -265,6 +265,7 @@ export class GeneratorService2 {
       this.usedCombinations.push(...this.lastColumn?.combinationsForBrothers);
     }
 
+    const selected: IProperColumn[] = [];
     return this.columnsLength.map((length, index) => {
 
       if (index === this.digits - 1 && this.lastColumn) {
@@ -281,11 +282,18 @@ export class GeneratorService2 {
         columnsForCurrentLength = this.filterColumns(shuffledColumns);
       }
 
+      const filteredByAnswer = this.filterColumnsByGeneralAnswers(columnsForCurrentLength, this.lastColumn ? [...selected, this.lastColumn] : []);
+
+      if (filteredByAnswer.length > 0) {
+        columnsForCurrentLength = filteredByAnswer;
+      }
+
       if (columnsForCurrentLength.length !== 0) {
         const selectedColumns = getRandomFromList(this.shuffleArray(this.shuffleArray(columnsForCurrentLength)));
 
         selectedColumns.isSelected = true;
         this.usedCombinations.push(...selectedColumns.combinationsForBrothers);
+        selected.push(selectedColumns);
 
         return selectedColumns;
       }
@@ -404,6 +412,22 @@ export class GeneratorService2 {
     }
 
     return columnsForCurrentLength;
+  }
+
+  private filterColumnsByGeneralAnswers(columns: IProperColumn[], usedColumns: IProperColumn[]) {
+    const usedAnswers = usedColumns.map(({values}) => values.reduce((acc, value) => {
+      acc = addFiveBasedNumbers(acc, value);
+      return acc;
+    }));
+
+    return columns.filter(({values}) => {
+      const answer = values.reduce((acc, value) => {
+        acc = addFiveBasedNumbers(acc, value);
+        return acc;
+      });
+
+      return !usedAnswers.includes(answer);
+    });
   }
 
   private shuffleArray<T>(array: T[]): T[] {

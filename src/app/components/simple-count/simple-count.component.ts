@@ -163,6 +163,4 @@ export class SimpleCountComponent implements OnInit {
       }
     })
   }
-
-
 }
