@@ -18,10 +18,10 @@
         <option value="multiple">Множественное</option>
       </select>
     </label>
-    <label>
-      <input type="checkbox" formControlName="isAllDischarge">
-      Is all discharge
-    </label>
+<!--    <label>-->
+<!--      <input type="checkbox" formControlName="isAllDischarge">-->
+<!--      Is all discharge-->
+<!--    </label>-->
   </div>
 
   <div class="wrapper">
@@ -59,10 +59,16 @@
               <select multiple id="positiveBrothersPossibleDigits" formControlName="positiveBrothersPossibleDigits">
                 <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
               </select>
+              <select multiple id="positiveBrothersPossibleDigitsStrengthened" formControlName="positiveBrothersPossibleDigits">
+                <option *ngFor="let item of ['-', 1, 2, 3, 4, 5, 6, 7, 8, 9]" [value]="item">{{item}}</option>
+              </select>
             </div>
 
             <div class="select">
               <select multiple formControlName="negativeBrothersPossibleDigits">
+                <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
+              </select>
+              <select multiple formControlName="negativeBrothersPossibleDigitsStrengthened">
                 <option *ngFor="let item of ['-', -1, -2, -3, -4, -5, -6, -7, -8, -9]" [value]="item">{{item}}</option>
               </select>
             </div>

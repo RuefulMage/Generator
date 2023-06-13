@@ -21,6 +21,8 @@ export class SimpleCountComponent implements OnInit {
     negativeSimplePossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
     positiveBrothersPossibleDigits: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     negativeBrothersPossibleDigits: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
+    positiveBrothersPossibleDigitsStrengthened: new FormControl([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    negativeBrothersPossibleDigitsStrengthened: new FormControl([-1, -2, -3, -4, -5, -6, -7, -8, -9]),
     isLimitedIntermediateAnswer: new FormControl(false),
     isAllDischarge: new FormControl(false)
   });
@@ -73,11 +75,15 @@ export class SimpleCountComponent implements OnInit {
       const possibleBrothersDigits = [...(this.myForm.get('positiveBrothersPossibleDigits')?.value as Array<number | '-'>),
         ...(this.myForm.get('negativeBrothersPossibleDigits')?.value as Array<number | '-'>)
       ].filter(value => value !== '-') as number[];
+      const possibleBrothersDigitsStrengthened = [...(this.myForm.get('positiveBrothersPossibleDigitsStrengthened')?.value as Array<number | '-'>),
+        ...(this.myForm.get('negativeBrothersPossibleDigitsStrengthened')?.value as Array<number | '-'>)
+      ].filter(value => value !== '-') as number[];
 
       this.generateExample({
         rows: parseInt(this.myForm.get('rows')?.value),
         columns: parseInt(this.myForm.get('digits')?.value),
         possibleBrothers: possibleBrothersDigits,
+        possibleBrothersDigitsStrengthened,
         possibleSimple: possibleSimpleDigits,
         possibleModes:
           Array.from(this.selectedModes)
@@ -89,6 +95,7 @@ export class SimpleCountComponent implements OnInit {
     rows?: number,
     columns?: number,
     possibleBrothers?: number[],
+    possibleBrothersDigitsStrengthened?: number[],
     possibleSimple?: number[],
     possibleModes?: Mode[]
   }): void {
@@ -108,6 +115,7 @@ export class SimpleCountComponent implements OnInit {
         simple: possibleSimple,
         brothers: props.possibleBrothers || []
       },
+      possibleBrothersDigitsStrengthened: props.possibleBrothersDigitsStrengthened || [],
       possibleModes,
       isLimitedIntermediateAnswer: false,
       isAllDischarge: this.myForm.get('isisAllDischarge')?.value || false

@@ -15,6 +15,7 @@ export class ChainGeneratorService {
   priorityDigits: number[] = [];
   priorityDigitsCombinations: number[][] = [];
   currentPriorityDigitCombinationIndex = 0;
+  possibleBrothersDigitsStrengthened: number[] = [];
 
   constructor(
     private generator: GeneratorService2

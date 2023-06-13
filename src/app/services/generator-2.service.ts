@@ -43,6 +43,7 @@ export interface IExampleGeneratorParams {
   isLimitedIntermediateAnswer?: boolean; // определяет, может ли промежуточный ответ быть вне списка выбранных цифр
   possibleAnswers?: PossibleAnswers; // список возможных цифр промежуточном и финальном ответах
   isAllDischarge?: boolean; // если выбрано, то формулы на всех разрядах кроме старшего
+  possibleBrothersDigitsStrengthened?: number[] //содержит цифры, выбранные для усиления в братьях
 }
 
 // Является объектом, который хранит ряд, содержащий как минимум одну формулу братьев
@@ -78,6 +79,7 @@ export class GeneratorService2 {
   usedCombinations: number[][] = [];
   excludedColumns: number[][] = [];
   priorityDigits: number[] = [];
+  strengthenedDigits: number[] = [];
   isAllDischarge = false;
 
   // в качестве ключа тут длина хранимых в значении столбцов
@@ -101,11 +103,13 @@ export class GeneratorService2 {
   public generate(params: IExampleGeneratorParams,
                   usedCombinations: number[][] = [],
                   excludedColumns: number[][] = [],
-                  priorityDigits: number[] = []
+                  priorityDigits: number[] = [],
+                  strengthenedDigits: number[] = []
   ): IExample {
     this.reset();
     this.excludedColumns = excludedColumns;
     this.priorityDigits = priorityDigits;
+    this.strengthenedDigits = strengthenedDigits;
 
     this.usedCombinations = usedCombinations;
     const {
@@ -269,53 +273,12 @@ export class GeneratorService2 {
 
       let shuffledColumns = columns.get(length) ? this.shuffleArray(this.shuffleArray(columns.get(length)!)) : [];
 
-      let columnsForCurrentLength = shuffledColumns
-        ?.filter(({isSelected, combinationsForBrothers, values}) => {
-          const isPriority = this.priorityDigits.every(digit => combinationsForBrothers.find(values => values[1] === digit));
-          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
-          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+      let columnsForCurrentLength = [];
 
-          return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
-        }) || [];
-
-      if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = shuffledColumns
-          ?.filter(({isSelected, combinationsForBrothers, values}) => {
-            const isPriority = this.priorityDigits.some(digit => combinationsForBrothers.find(values => values[1] === digit));
-            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
-            const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
-
-            return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
-          }) || [];
-      }
-
-      if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = shuffledColumns
-          ?.filter(({isSelected, combinationsForBrothers, values}) => {
-            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
-            const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
-
-            return intersection.length === 0 && !isSelected && !isColumnUsed;
-          }) || [];
-      }
-
-      if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = shuffledColumns
-          ?.filter(({isSelected, combinationsForBrothers}) => {
-            const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
-
-            return intersection.length === 0 && !isSelected
-          }) || [];
-      }
-
-      if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = shuffledColumns
-          ?.filter(({isSelected, combinationsForBrothers}) =>
-            this.getArraysDifference(combinationsForBrothers, this.usedCombinations).length > 0 && !isSelected) || [];
-      }
-
-      if (columnsForCurrentLength.length === 0) {
-        columnsForCurrentLength = shuffledColumns?.filter(({isSelected}) => !isSelected) || [];
+      if (this.strengthenedDigits.length > 0) {
+        columnsForCurrentLength = this.filterColumnsWithStrengthened(shuffledColumns);
+      } else {
+        columnsForCurrentLength = this.filterColumns(shuffledColumns);
       }
 
       if (columnsForCurrentLength.length !== 0) {
@@ -337,6 +300,112 @@ export class GeneratorService2 {
     });
   }
 
+  private filterColumns(shuffledColumns: IProperColumn[]): IProperColumn[] {
+    let columnsForCurrentLength = shuffledColumns
+      ?.filter(({isSelected, combinationsForBrothers, values}) => {
+        const isPriority = this.priorityDigits.every(digit => combinationsForBrothers.find(values => values[1] === digit));
+        const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+        const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+        return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
+      }) || [];
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers, values}) => {
+          const isPriority = this.priorityDigits.some(digit => combinationsForBrothers.find(values => values[1] === digit));
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+          return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers, values}) => {
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+          return intersection.length === 0 && !isSelected && !isColumnUsed;
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers}) => {
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+
+          return intersection.length === 0 && !isSelected
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers}) =>
+          this.getArraysDifference(combinationsForBrothers, this.usedCombinations).length > 0 && !isSelected) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns?.filter(({isSelected}) => !isSelected) || [];
+    }
+
+    return columnsForCurrentLength;
+  }
+
+  private filterColumnsWithStrengthened(shuffledColumns: IProperColumn[]): IProperColumn[] {
+    let columnsForCurrentLength = shuffledColumns
+      ?.filter(({isSelected, combinationsForBrothers, values}) => {
+        const isPriority = this.strengthenedDigits.every(digit => combinationsForBrothers.find(values => values[1] === digit));
+        const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+        const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+        return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
+      }) || [];
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers, values}) => {
+          const isPriority = this.strengthenedDigits.some(digit => combinationsForBrothers.find(values => values[1] === digit));
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+          return intersection.length === 0 && !isSelected && !isColumnUsed && isPriority;
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers, values}) => {
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+          const isColumnUsed = this.excludedColumns.some(column => column.every((value, index) => value === values[index]));
+
+          return intersection.length === 0 && !isSelected && !isColumnUsed;
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers}) => {
+          const intersection = findIntersectionForTwoDimensionArray(this.usedCombinations, combinationsForBrothers);
+
+          return intersection.length === 0 && !isSelected
+        }) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns
+        ?.filter(({isSelected, combinationsForBrothers}) =>
+          this.getArraysDifference(combinationsForBrothers, this.usedCombinations).length > 0 && !isSelected) || [];
+    }
+
+    if (columnsForCurrentLength.length === 0) {
+      columnsForCurrentLength = shuffledColumns?.filter(({isSelected}) => !isSelected) || [];
+    }
+
+    return columnsForCurrentLength;
+  }
+
   private shuffleArray<T>(array: T[]): T[] {
     const arrayCopy = [...array];
 
@@ -351,10 +420,17 @@ export class GeneratorService2 {
   private filterColumnsBySameSignAtSameIndexes(): Map<number, IProperColumn[]> {
     let lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]) || [];
 
-    lastColumnPossibleColumns = lastColumnPossibleColumns
-      .filter(({combinationsForBrothers}) => this.priorityDigits
-        .every(digit => combinationsForBrothers.find(values => values[1] === digit))
-      ) || [];
+    if (this.strengthenedDigits.length > 0) {
+      lastColumnPossibleColumns = lastColumnPossibleColumns
+        .filter(({combinationsForBrothers}) => this.strengthenedDigits
+          .every(digit => combinationsForBrothers.find(values => values[1] === digit))
+        ) || [];
+    } else {
+      lastColumnPossibleColumns = lastColumnPossibleColumns
+        .filter(({combinationsForBrothers}) => this.priorityDigits
+          .every(digit => combinationsForBrothers.find(values => values[1] === digit))
+        ) || [];
+    }
 
     if (lastColumnPossibleColumns.length === 0) {
       lastColumnPossibleColumns = lastColumnPossibleColumns
