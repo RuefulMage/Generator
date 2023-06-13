@@ -420,6 +420,9 @@ export class GeneratorService2 {
   private filterColumnsBySameSignAtSameIndexes(): Map<number, IProperColumn[]> {
     let lastColumnPossibleColumns = this.properRows.get(this.columnsLength[this.columnsLength.length - 1]) || [];
 
+    console.log('this.strengthenedDigits');
+    console.log(this.strengthenedDigits);
+    console.log('this.strengthenedDigits');
     if (this.strengthenedDigits.length > 0) {
       lastColumnPossibleColumns = lastColumnPossibleColumns
         .filter(({combinationsForBrothers}) => this.strengthenedDigits

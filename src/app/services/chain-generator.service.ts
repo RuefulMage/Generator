@@ -47,13 +47,15 @@ export class ChainGeneratorService {
       example = this.generator.generate(this.params,
         [...this.usedCombinations],
         [...this.usedColumns],
-        [...this.priorityDigits]
+        [...this.priorityDigits],
+        [...this.params.possibleBrothersDigitsStrengthened || []]
       );
     } else {
       example = this.generator.generate(this.params,
         [...this.usedCombinations],
         [...this.usedColumns],
-        [...this.priorityDigitsCombinations[this.currentPriorityDigitCombinationIndex]]
+        [...this.priorityDigitsCombinations[this.currentPriorityDigitCombinationIndex]],
+        [...this.params.possibleBrothersDigitsStrengthened || []]
       );
       if( this.currentPriorityDigitCombinationIndex === this.priorityDigitsCombinations.length - 1) {
         this.currentPriorityDigitCombinationIndex = 0;
