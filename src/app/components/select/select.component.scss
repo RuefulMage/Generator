@@ -1,0 +1,133 @@
+details {
+  position: relative;
+  width: 330px;
+}
+
+details[open] {
+  z-index: 1;
+}
+
+summary {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 10px;
+  background-color: white;
+  border: 3px solid #9485E9;
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] summary:before {
+  content: '';
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+summary:after {
+  content: '';
+  display: inline-block;
+  float: right;
+  width: 8px;
+  height: 8px;
+  border-bottom: 1px solid #9485E9;
+  border-left: 1px solid #9485E9;
+  border-bottom-left-radius: 2px;
+  transform: rotate(45deg) translate(50%, 0%);
+  transform-origin: center center;
+  transition: transform ease-in-out 100ms
+}
+
+summary:focus {
+  outline: none;
+}
+
+details[open] summary:after {
+  transform: rotate(-45deg) translate(0%, 0%);
+}
+
+ul {
+  width: 100%;
+  background: white;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  padding: 1rem;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 3px solid #9485E9;
+
+}
+
+li {
+  margin: 0;
+  border-bottom: 1px solid #ccc;
+  list-style: none;
+}
+
+li:first-child {
+  padding-top: 0;
+}
+
+li:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* FAKE SELECT */
+
+summary.radios {
+  counter-reset: radios;
+}
+
+summary.radios:before {
+  content: var(--selection);
+}
+
+input[type=radio] {
+  counter-increment: radios;
+  appearance: none;
+  display: none;
+}
+
+input[type=radio]:checked {
+  display: inline;
+  --display: block;
+}
+
+input[type=radio]:after {
+  content: attr(title);
+  display: inline;
+  font-size: 1rem;
+}
+
+ul.list {
+  counter-reset: labels;
+}
+
+label {
+  width: 100%;
+  padding: 10px 0;
+  display: flex;
+  cursor: pointer;
+  justify-content: space-between;
+}
+
+label span {
+  --display: none;
+  display: var(--display);
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid #727272;
+  border-radius: 10px;
+}

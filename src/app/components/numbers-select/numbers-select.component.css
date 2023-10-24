@@ -1,0 +1,47 @@
+.number-select {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+}
+
+.number-select__numbers {
+  display: flex;
+  border: 3px solid #9485E9;
+  border-radius: 5px;
+}
+
+.number-select__number {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.number-select__number_selected {
+  background-color: #9485E9;
+  color: white;
+}
+
+.number-select__check-icon {
+  width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.number-select__close-icon {
+  display: flex;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  cursor: pointer;
+  background-color: #9485E9;
+  color: white;
+  margin-left: 5px;
+  user-select: none;
+}

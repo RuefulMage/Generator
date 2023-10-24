@@ -1,3 +1,4 @@
+
 import {Injectable} from '@angular/core';
 import {GeneratorService2, IExample, IExampleGeneratorParams, IRow, Mode} from "./generator-2.service";
 import {findIntersectionForTwoDimensionArray, getRandomFromList} from "../utils/utils";

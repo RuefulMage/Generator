@@ -1,0 +1,82 @@
+<div class="settings">
+  <div class="field field_inline">
+    <div class="label label_inline">Количество рядов:</div>
+    <app-number-input
+      name="rows"
+      (onChange)="handleSettingsChange({rows: $event})"
+      [defaultValue]="settings.rows"
+    ></app-number-input>
+  </div>
+  <div class="field field_inline">
+    <div class="label label_inline label__columns">Количество цифр:</div>
+    <app-number-input
+      name="digits"
+      (onChange)="handleSettingsChange({digits: $event})"
+      [defaultValue]="settings.digits"
+    ></app-number-input>
+  </div>
+  <div class="field">
+    <div class="label">Чередование</div>
+    <app-select
+      name="select"
+      [options]="alternationOptions"
+      [defaultValue]="alternationOptions[0].value"
+      (onChange)="handleSettingsChange({alternation: $event})"
+    ></app-select>
+  </div>
+
+  <div class="field">
+    <app-checkbox
+      text="Простой счет"
+      [checked]="settings.isSimpleMode"
+      (onChange)="handleSettingsChange({isSimpleMode: $event})"
+    ></app-checkbox>
+
+    <div class="simple-select" *ngIf="settings.isSimpleMode">
+      <div class="number-select">
+        <app-numbers-select
+          [numbers]="[1, 2, 3, 4, 5, 6, 7, 8, 9]"
+          (onChange)="handleSettingsChange({positiveSimplePossibleDigits: $event})"
+          [defaultValue]="settings.positiveSimplePossibleDigits"
+        ></app-numbers-select>
+      </div>
+      <div class="number-select">
+        <app-numbers-select
+          [numbers]="[-1, -2, -3, -4, -5, -6, -7, -8, -9]"
+          (onChange)="handleSettingsChange({negativeSimplePossibleDigits: $event})"
+          [defaultValue]="settings.negativeSimplePossibleDigits"
+        ></app-numbers-select>
+      </div>
+    </div>
+  </div >
+
+  <div class="field">
+    <app-checkbox
+      text="Братья"
+      [checked]="settings.isBrothersMode"
+      (onChange)="handleSettingsChange({isBrothersMode: $event})"
+    ></app-checkbox>
+
+    <div class="brothers-select" *ngIf="settings.isBrothersMode">
+      <div class="number-select">
+        <app-numbers-select
+          [numbers]="[1, 2, 3, 4]"
+          (onChange)="handleSettingsChange({positiveBrothersPossibleDigits: $event})"
+          [defaultValue]="settings.positiveSimplePossibleDigits"
+        ></app-numbers-select>
+      </div>
+      <div class="number-select">
+        <app-numbers-select
+          [numbers]="[-1, -2, -3, -4]"
+          (onChange)="handleSettingsChange({negativeBrothersPossibleDigits: $event})"
+          [defaultValue]="settings.negativeSimplePossibleDigits"
+        ></app-numbers-select>
+      </div>
+    </div>
+  </div>
+
+  <app-button
+    text="generate"
+    (onClick)="generateExamples()"
+  ></app-button>
+</div>

@@ -1,0 +1,20 @@
+<details>
+  <summary class="radios">
+    <input
+      *ngFor="let option of options"
+      type="radio"
+      [name]="name"
+      [title]="option.label"
+      [id]="option.value"
+      [checked]="value === option.value"
+      (change)="handleChange($event)"
+    >
+  </summary>
+  <ul class="list">
+    <li *ngFor="let option of options" >
+      <label [for]="option.value">
+        {{option.label}}
+      </label>
+    </li>
+  </ul>
+</details>
