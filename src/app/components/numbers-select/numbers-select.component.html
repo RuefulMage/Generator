@@ -1,0 +1,29 @@
+<div class="number-select">
+  <div class="number-select__numbers">
+    <div
+      *ngFor="let number of numbers"
+      (click)="handleNumberClick(number)"
+      class="number-select__number"
+      [class.number-select__number_selected]="selectedNumbers.includes(number)"
+    >
+      {{number}}
+    </div>
+  </div>
+
+  <div
+    *ngIf="selectedNumbers.length > 0"
+    class="number-select__close-icon"
+    (click)="handleCloseButtonClick()"
+  >
+    x
+  </div>
+
+  <div
+    *ngIf="selectedNumbers.length === 0"
+    class="number-select__check-icon"
+    (click)="handleCheckButtonClick()"
+  >
+    <img src="../../../assets/icons/check.svg" alt="check all">
+  </div>
+</div>
+

@@ -1,0 +1,43 @@
+.wrapper {
+  width: 100%;
+  padding: 30px 20px;
+}
+
+.template {
+  max-width: 300px;
+  margin-bottom: 20px;
+}
+
+.examples {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 18px;
+}
+
+.example-wrapper {
+  border: 3px solid #7161CC;
+  border-radius: 15px;
+  background-color: white;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  padding: 10px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.example {
+  display: flex;
+  flex-direction: column;
+}
+
+.formulas {
+  border-bottom: 1px solid #9485E9;
+  margin-bottom: 5px;
+}
+
+.answer {
+  border-top: 1px solid #9485E9;
+  padding-top: 5px;
+}

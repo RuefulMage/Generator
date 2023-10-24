@@ -1,0 +1,30 @@
+.field {
+  margin-bottom: 15px;
+}
+
+.field_inline {
+  display: flex;
+  align-items: center;
+}
+
+.label {
+  margin-bottom: 5px;
+  color: rgb(128, 128, 128);
+}
+
+.label_inline {
+  margin-bottom: 0;
+  margin-right: 10px;
+}
+
+.label__columns {
+  margin-right: 14px;
+}
+
+.simple-select, .brothers-select {
+  margin-top: 10px;
+}
+
+.number-select {
+  margin-bottom: 10px;
+}

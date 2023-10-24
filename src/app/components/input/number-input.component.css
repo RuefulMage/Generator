@@ -1,0 +1,13 @@
+.input {
+  border: 3px solid #9485E9;
+  width: 70px;
+  padding: 8px;
+  text-align: center;
+  border-radius: 10px;
+  user-select: none;
+
+  &::-webkit-inner-spin-button {
+    opacity: 1;
+    background: red;
+  }
+}

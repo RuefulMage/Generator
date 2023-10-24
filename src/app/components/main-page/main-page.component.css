@@ -1,0 +1,17 @@
+.main {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.examples {
+  background-color: #D4CEF6;
+  flex-grow: 1;
+}
+
+.settings {
+  max-width: 400px;
+  width: 100%;
+  padding: 30px 20px;
+}

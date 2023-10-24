@@ -1,0 +1,28 @@
+<div class="wrapper">
+  <div class="example-wrapper template">
+    <div class="formulas">
+      <i>Использованные формулы</i>
+    </div>
+    <p class="example">
+      <i>строка(промежуточный ответ)</i>
+      <i>строка(промежуточный ответ)</i>
+      <i>строка(промежуточный ответ)</i>
+      <i>строка(промежуточный ответ)</i>
+    </p>
+
+    <b class="answer">Финальный ответ</b>
+  </div>
+
+  <div class="examples">
+    <div class="example-wrapper" *ngFor="let example of generator.currentRows; index as j">
+      <div class="formulas" *ngIf="generator.usedFormulas[j].length > 0">
+        <span *ngFor="let formula of generator.usedFormulas[j]">{{formula}} &nbsp;</span>
+      </div>
+      <p class="example">
+        <span *ngFor="let i of example; index as k">{{i}}({{generator.currentAnswers[j][k]}})</span>
+      </p>
+
+      <p class="answer">{{generator.answers[j]}}</p>
+    </div>
+  </div>
+</div>
